@@ -5,16 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chronicle</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- PeerJS -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-    
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Import Maps -->
     <script type="importmap">
     {
       "imports": {
@@ -38,14 +32,12 @@
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
-        /* Equalizer Animation */
         @keyframes equalizer {
             0% { height: 20%; }
             50% { height: 100%; }
             100% { height: 20%; }
         }
 
-        /* Pulse Slow */
         @keyframes pulse-slow {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.8; }
@@ -78,7 +70,6 @@
           Star, BarChart3, TrendingUp, Hash, Layers, Image as ImageIcon, Camera, Download, Upload, Radio, Users, Wifi, RefreshCw, HardDrive, Database, FileJson, Archive, AlertTriangle, ArrowRightLeft, FileDown, PenTool, Timer, MoreHorizontal, ListPlus, Filter, AlignLeft, Activity, User2, Info, List
         } from 'lucide-react';
 
-        /** CONFIGURACIÓN & UTILS */
         const GROUPS = {
             VISUAL: { id: 'visual', label: 'Visual', icon: MonitorPlay, color: 'text-blue-400' },
             READING: { id: 'reading', label: 'Lectura', icon: BookOpen, color: 'text-amber-400' },
@@ -116,9 +107,8 @@
         const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
         const formatDuration = (m) => { if(!m) return '0m'; const h = Math.floor(m / 60); const min = m % 60; return h > 0 ? `${h}h ${min}m` : `${min}m`; };
 
-        /** CONVERTER FOR LEGACY DATA */
         const convertFromLegacy = (item) => {
-            const rating = item.rating > 5 ? item.rating : (item.rating * 20); // 0-5 to 0-100
+            const rating = item.rating > 5 ? item.rating : (item.rating * 20); 
             return {
                 id: item.id || generateId(),
                 title: item.title,
@@ -261,7 +251,8 @@
                             source: 'MAL', 
                             type: t==='anime'?'anime':'manga', 
                             tags: i.genres?.map(g=>g.name)||[],
-                            author: t==='anime' ? (i.studios?.[0]?.name) : (i.authors?.[0]?.name)
+                            author: t==='anime' ? (i.studios?.[0]?.name) : (i.authors?.[0]?.name),
+                            total: t==='anime' ? i.episodes : i.chapters 
                         }))||[]);
                     
                     if(source==='ALL'||source==='visual') promises.push(fetchJikan('anime'));
@@ -287,7 +278,8 @@
                             source: 'Google', 
                             type: 'book', 
                             tags: i.volumeInfo.categories||[],
-                            author: i.volumeInfo.authors?.[0] 
+                            author: i.volumeInfo.authors?.[0],
+                            total: i.volumeInfo.pageCount
                         }))||[]));
                 }
                 return (await Promise.all(promises)).flat().filter(Boolean);
@@ -383,8 +375,7 @@
                     if(file) {
                         const reader = new FileReader();
                         reader.onload = async (ev) => {
-                            // Force vertical crop for entries covers
-                            const compressed = await ImageUtils.compress(ev.target.result, 'MEDIUM', false);
+                            const compressed = await ImageUtils.compress(ev.target.result, 'MEDIUM');
                             onUpload(compressed);
                         };
                         reader.readAsDataURL(file);
@@ -545,25 +536,8 @@
                                  data.entries = data.items.map(convertFromLegacy);
                              }
                         }
-                        const processImages = async () => {
-                             const compLevel = state.settings.compression || 'MEDIUM';
-                             if(data.profile?.avatar) data.profile.avatar = await ImageUtils.compress(data.profile.avatar, compLevel, false);
-                             if(data.profile?.banner) data.profile.banner = await ImageUtils.compress(data.profile.banner, compLevel, false);
-                             if(data.entries) {
-                                 for(let i=0; i<data.entries.length; i++) {
-                                     if(data.entries[i].image && data.entries[i].image.startsWith('data:')) {
-                                         // Force vertical crop for entries
-                                         data.entries[i].image = await ImageUtils.compress(data.entries[i].image, compLevel, true);
-                                     }
-                                 }
-                             }
-                             // Also import keys if present in settings
-                             if(data.settings) {
-                                 setConfig(prev => ({...prev, ...data.settings}));
-                             }
-                             dispatch({ type: 'SET_UI', payload: { importConflict: data, settingsOpen: false } });
-                        };
-                        processImages();
+                        // Defer image processing to modal choice
+                        dispatch({ type: 'SET_UI', payload: { importConflict: data, settingsOpen: false } });
                     } catch(err) { alert("Error JSON"); }
                 };
                 reader.readAsText(file);
@@ -582,6 +556,7 @@
                         <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pr-2">
                             <section className="bg-white/5 p-4 rounded-xl border border-white/5">
                                 <h3 className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2"><HardDrive size={14}/> Datos</h3>
+                                <p className="text-[10px] text-gray-500 mb-4">Almacenamiento: IndexedDB (Local)</p>
                                 
                                 <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2">Compresión Imágenes</h4>
                                 <div className="grid grid-cols-4 gap-1 mb-6">
@@ -648,7 +623,7 @@
                         <div className="w-16 h-16 bg-cyan-500 rounded-full mx-auto mb-4 shadow-[0_0_40px_rgba(6,182,212,0.4)] flex items-center justify-center"><div className="w-6 h-6 bg-white rounded-full"/></div>
                         <h1 className="text-2xl font-bold text-white mb-2">Bienvenido a Chronicle</h1>
                         <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                            Chronicle es tu tracker personal 100% local. Gestiona tus películas, series, juegos y música sin servidores externos. Tus datos se guardan en este dispositivo.
+                            Chronicle es tu tracker personal 100% local. Gestiona tus películas, series, juegos y música sin servidores externos. Tus datos se guardan en este dispositivo (IndexedDB).
                         </p>
                         <p className="text-gray-500 text-xs mb-6">
                             Existe una versión "legacy" totalmente offline en <a href="https://noize.neocities.org/Chronicle" target="_blank" className="text-cyan-400 underline">Neocities</a>. Si vienes de allá, ¡puedes importar tu archivo JSON aquí!
@@ -902,10 +877,10 @@
                     
                     {/* New Stats Row */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Entradas este Mes</div><div className="text-xl font-bold text-white">{stats.monthEntries}</div><div className="text-[9px] text-gray-600 mt-1">Ritmo Mensual</div></div>
-                        <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Entradas</div><div className="text-xl font-bold text-white">{entries.length}</div><div className="text-[9px] text-gray-600 mt-1">Archivo Local</div></div>
+                        <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Tiempo Total</div><div className="text-xl font-bold text-white">{Math.floor(stats.totalMins/60)}h <span className="text-gray-500 text-sm">{stats.totalMins%60}m</span></div><div className="text-[9px] text-gray-600 mt-1">Click para Días</div></div>
                         <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Completados</div><div className="text-xl font-bold text-emerald-400">{stats.counts.completed}</div><div className="text-[9px] text-gray-600 mt-1">Entradas Terminadas</div></div>
-                        <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Favoritos</div><div className="text-xl font-bold text-red-400">{stats.favorites}</div><div className="text-[9px] text-gray-600 mt-1">Destacados</div></div>
+                        <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Mainstream</div><div className="text-xl font-bold text-purple-400">{stats.mainstreamAvg}%</div><div className="text-[9px] text-gray-600 mt-1">Popularidad</div></div>
+                        <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Promedio</div><div className="text-xl font-bold text-yellow-400">{stats.avg.toFixed(1)}</div><div className="text-[9px] text-gray-600 mt-1">{stats.nickname}</div></div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1005,12 +980,12 @@
                              {/* Background blur for fill */}
                              {entry.image && <div className="absolute inset-0 bg-cover bg-center opacity-30 blur-xl scale-125" style={{backgroundImage: `url(${entry.image})`}} />}
                             
-                             {/* Actual Image - Vertical Poster Style with Rounded Corners */}
-                             <div className="relative w-full h-[50vh] md:h-full p-6 flex items-center justify-center z-10">
+                             {/* Actual Image - Vertical Poster Style with Rounded Corners - REDUCED HEIGHT FOR MOBILE */}
+                             <div className="relative w-full h-52 md:h-full p-4 flex items-center justify-center z-10">
                                 {entry.image ? (
                                     <img src={entry.image} className="w-auto h-full object-contain rounded-2xl shadow-2xl border border-white/10 max-w-[200px]" />
                                 ) : (
-                                    <div className={`w-32 h-48 flex items-center justify-center ${cat.color} bg-white/5 rounded-2xl border border-white/10`}><cat.icon size={48}/></div>
+                                    <div className={`w-32 h-full flex items-center justify-center ${cat.color} bg-white/5 rounded-2xl border border-white/10`}><cat.icon size={48}/></div>
                                 )}
                              </div>
 
@@ -1090,6 +1065,17 @@
                 dispatch({ type: 'SAVE_ENTRY', payload: { ...form, totalMinutes: totalMin } });
                 dispatch({ type: 'SET_UI', payload: { modalMode: 'view', focusedEntry: { ...form, totalMinutes: totalMin }, searchQuery: '', searchOpen: false } });
             };
+            
+            const handleStatusChange = (e) => {
+                 const newStatus = e.target.value;
+                 let newProgress = form.progress;
+                 
+                 // Auto-complete progress if completed and total is available
+                 if(newStatus === 'completed' && form.total > 0) {
+                     newProgress = form.total;
+                 }
+                 setForm({...form, status: newStatus, progress: newProgress});
+            };
 
             const handleClose = () => {
                 const entryExists = state.entries.some(e => e.id === form.id);
@@ -1144,7 +1130,7 @@
                                             <select className="bg-gray-900 border border-white/10 rounded-lg px-2 py-2 text-xs text-white outline-none bg-black text-white" value={form.category||'movie'} onChange={e=>setForm({...form, category:e.target.value})}>
                                                 {Object.values(CATEGORIES).map(c=><option key={c.id} value={c.id} className="bg-gray-900 text-white">{c.label}</option>)}
                                             </select>
-                                            <select className="bg-gray-900 border border-white/10 rounded-lg px-2 py-2 text-xs text-white outline-none bg-black text-white" value={form.status||'completed'} onChange={e=>setForm({...form, status:e.target.value})}>
+                                            <select className="bg-gray-900 border border-white/10 rounded-lg px-2 py-2 text-xs text-white outline-none bg-black text-white" value={form.status||'completed'} onChange={handleStatusChange}>
                                                 {Object.values(STATUSES).map(s=><option key={s.id} value={s.id} className="bg-gray-900 text-white">{s.label}</option>)}
                                             </select>
                                         </div>
@@ -1177,11 +1163,11 @@
                                  <div className="grid grid-cols-2 gap-4">
                                      <div className="bg-white/5 p-3 rounded-xl border border-white/5">
                                          <label className="text-[10px] uppercase font-bold text-gray-500 block mb-2">Progreso Actual</label>
-                                         <input type="number" className="w-full bg-black border border-white/20 rounded p-2 text-white text-lg font-bold outline-none" placeholder="0" value={form.progress||0} onChange={e=>setForm({...form, progress: parseInt(e.target.value)})}/>
+                                         <input type="number" className="w-full bg-black border border-white/20 rounded p-2 text-white text-lg font-bold outline-none" placeholder="0" value={form.progress||''} onChange={e=>setForm({...form, progress: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
                                      </div>
                                      <div className="bg-white/5 p-3 rounded-xl border border-white/5">
                                          <label className="text-[10px] uppercase font-bold text-gray-500 block mb-2">Total Unidades</label>
-                                         <input type="number" className="w-full bg-black border border-white/20 rounded p-2 text-white text-lg font-bold outline-none" placeholder="0" value={form.total||0} onChange={e=>setForm({...form, total: parseInt(e.target.value)})}/>
+                                         <input type="number" className="w-full bg-black border border-white/20 rounded p-2 text-white text-lg font-bold outline-none" placeholder="0" value={form.total||''} onChange={e=>setForm({...form, total: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
                                      </div>
                                  </div>
                                  
@@ -1190,18 +1176,18 @@
                                      <div className="grid grid-cols-2 gap-4 mb-4">
                                          <div>
                                              <label className="text-[9px] text-gray-400 block mb-1">Duración por Unidad (min)</label>
-                                             <input type="number" className="w-full bg-black border border-white/20 rounded p-2 text-white text-sm" placeholder="Ej: 24 (Anime)" value={form.unitDuration||''} onChange={e=>setForm({...form, unitDuration: parseInt(e.target.value)})}/>
+                                             <input type="number" step="0.1" className="w-full bg-black border border-white/20 rounded p-2 text-white text-sm" placeholder="Ej: 24 (Anime)" value={form.unitDuration||''} onChange={e=>setForm({...form, unitDuration: e.target.value === '' ? '' : parseFloat(e.target.value)})}/>
                                          </div>
                                          <div>
                                               <label className="text-[9px] text-gray-400 block mb-1">Cálculo Automático</label>
                                               <div className="text-xl font-bold text-cyan-400">
-                                                  {Math.floor(((form.status==='completed'?form.total:form.progress)*form.unitDuration)/60)}h <span className="text-sm text-gray-600">{((form.status==='completed'?form.total:form.progress)*form.unitDuration)%60}m</span>
+                                                  {Math.floor(((form.status==='completed'?(form.total||0):(form.progress||0))*(form.unitDuration||0))/60)}h <span className="text-sm text-gray-600">{Math.round(((form.status==='completed'?(form.total||0):(form.progress||0))*(form.unitDuration||0))%60)}m</span>
                                               </div>
                                          </div>
                                      </div>
                                      <div className="border-t border-white/10 pt-4">
                                          <label className="text-[9px] text-gray-400 block mb-1">Sobrescribir Manualmente (Minutos Totales)</label>
-                                         <input type="number" className="w-full bg-black border border-white/20 rounded p-2 text-white text-sm" placeholder="Opcional: Tiempo total exacto" value={form.totalMinutes||''} onChange={e=>setForm({...form, totalMinutes: parseInt(e.target.value)})}/>
+                                         <input type="number" className="w-full bg-black border border-white/20 rounded p-2 text-white text-sm" placeholder="Opcional: Tiempo total exacto" value={form.totalMinutes||''} onChange={e=>setForm({...form, totalMinutes: e.target.value === '' ? '' : parseInt(e.target.value)})}/>
                                      </div>
                                  </div>
                                  <div className="text-[10px] text-gray-500 text-center">
@@ -1257,7 +1243,8 @@
                         rating: 0,
                         // Autocomplete extra data
                         author: item.author || '',
-                        year: item.year || ''
+                        year: item.year || '',
+                        total: item.total || 0 // Autocomplete total if available
                     }
                 }});
             };
@@ -1341,6 +1328,41 @@
                     localStorage.setItem('chronicle_settings', JSON.stringify({ storageType: state.settings.storageType, compression: state.settings.compression, setup: true }));
                 }
             }, [state.entries, state.settings, state.profile]);
+
+            const filteredEntries = useMemo(() => {
+                let res = [...state.entries]; // FIX: Copia del array para evitar mutaciones al ordenar
+                if(state.ui.activeGroup === 'dashboard') return res;
+                if(state.ui.activeGroup !== 'all') {
+                    if (state.ui.activeGroup === 'audio') {
+                         res = res.filter(e => e.category === 'music');
+                    } else if (state.ui.activeGroup === 'favorites') {
+                         res = res.filter(e => e.favorite);
+                    } else {
+                        const isGroup = Object.values(GROUPS).find(g => g.id === state.ui.activeGroup);
+                        if(isGroup) {
+                            res = res.filter(e => { const cat = CATEGORIES[e.category?.toUpperCase()]; return cat && cat.groupId === isGroup.id; });
+                        }
+                    }
+                }
+                
+                // Filtro local por texto si hay búsqueda y NO es dashboard
+                if(state.ui.searchQuery && state.ui.activeGroup !== 'dashboard') {
+                    const q = state.ui.searchQuery.toLowerCase();
+                    res = res.filter(e => e.title.toLowerCase().includes(q));
+                }
+                
+                // Filtros de Categoría y Estado en las vistas de lista
+                if (state.ui.activeGroup !== 'dashboard' && state.ui.activeGroup !== 'all') {
+                    if (state.ui.filterCategory && state.ui.filterCategory !== 'all') {
+                        res = res.filter(e => e.category === state.ui.filterCategory);
+                    }
+                    if (state.ui.filterStatus && state.ui.filterStatus !== 'all') {
+                        res = res.filter(e => e.status === state.ui.filterStatus);
+                    }
+                }
+                
+                return res.sort((a,b) => new Date(b.date) - new Date(a.date));
+            }, [state.entries, state.ui.activeGroup, state.ui.searchQuery, state.ui.filterCategory, state.ui.filterStatus]);
 
             const renderContent = () => {
                 if (state.ui.activeGroup === 'dashboard' && !state.ui.searchQuery) {
