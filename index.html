@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chronicle v2</title>
+    <title>Chronicle</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Babel para JSX -->
+    <!-- PeerJS -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Import Maps para módulos -->
+    <!-- Import Maps -->
     <script type="importmap">
     {
       "imports": {
@@ -23,50 +26,44 @@
     </script>
 
     <style>
-        /* Scrollbar personalizada */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        body { background-color: #050505; color: #e5e5e5; font-family: sans-serif; }
         
-        /* Animaciones */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
-        .animate-in { animation: fadeIn 0.4s ease-out forwards; }
-        .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        
-        /* Glass Utilities */
-        .glass-panel {
-            background: rgba(20, 20, 24, 0.6);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        /* Equalizer Animation */
+        @keyframes equalizer {
+            0% { height: 20%; }
+            50% { height: 100%; }
+            100% { height: 20%; }
         }
-        .glass-solid {
-             background: rgba(9, 9, 11, 0.95);
-             backdrop-filter: blur(20px);
-             border: 1px solid rgba(255, 255, 255, 0.08);
+
+        /* Pulse Slow */
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .glass-panel {
+            background: rgba(20, 20, 24, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
-<body class="bg-[#09090b] text-gray-200 selection:bg-indigo-500/30">
+<body class="selection:bg-cyan-500/30">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
@@ -75,740 +72,1464 @@
         import { 
           BookOpen, Clapperboard, Gamepad2, Headphones, Tv, Ghost,
           Search, Plus, Settings, X, Save, Share2, User, Edit3,
-          BarChart2, Calendar, LayoutGrid, List, RefreshCw, 
-          Dice5, Trophy, ChevronRight, Activity, Command, Globe,
-          Music, ExternalLink, Image as ImageIcon, Download, Upload, AlertCircle,
-          Clock, CheckCircle2, Bookmark, Eye, XCircle, RotateCcw,
-          Library, Smartphone, Hash, Star, Heart, MonitorPlay, Zap, Quote
+          LayoutGrid, Heart, Calendar, Clock, CheckCircle2, Bookmark, 
+          Eye, XCircle, RotateCcw, Library, Smartphone, MonitorPlay, 
+          Zap, Quote, Music, Disc, Mic2, Play, Pause, Trash2, ExternalLink, 
+          Star, BarChart3, TrendingUp, Hash, Layers, Image as ImageIcon, Camera, Download, Upload, Radio, Users, Wifi, RefreshCw, HardDrive, Database, FileJson, Archive, AlertTriangle, ArrowRightLeft, FileDown, PenTool, Timer, MoreHorizontal, ListPlus, Filter, AlignLeft, Activity, User2, Info
         } from 'lucide-react';
 
-        /**
-         * ==========================================
-         * UTILITIES & CONFIG
-         * ==========================================
-         */
-
+        /** CONFIGURACIÓN & UTILS */
         const GROUPS = {
-            VISUAL: { id: 'visual', label: 'Visual', icon: MonitorPlay },
-            READING: { id: 'reading', label: 'Lectura', icon: BookOpen },
-            AUDIO: { id: 'audio', label: 'Audio', icon: Headphones },
-            GAME: { id: 'game_group', label: 'Juegos', icon: Gamepad2 }
+            VISUAL: { id: 'visual', label: 'Visual', icon: MonitorPlay, color: 'text-blue-400' },
+            READING: { id: 'reading', label: 'Lectura', icon: BookOpen, color: 'text-amber-400' },
+            AUDIO: { id: 'audio', label: 'Audio', icon: Headphones, color: 'text-rose-400' },
+            GAME: { id: 'game_group', label: 'Juegos', icon: Gamepad2, color: 'text-emerald-400' }
         };
 
         const CATEGORIES = {
-          MOVIE: { id: 'movie', groupId: 'visual', label: 'Película', icon: Clapperboard, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-          TV: { id: 'tv', groupId: 'visual', label: 'Serie', icon: Tv, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-          ANIME: { id: 'anime', groupId: 'visual', label: 'Anime', icon: Ghost, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
-          
-          BOOK: { id: 'book', groupId: 'reading', label: 'Libro', icon: BookOpen, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-          MANGA: { id: 'manga', groupId: 'reading', label: 'Manga', icon: BookOpen, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
-          MANHWA: { id: 'manhwa', groupId: 'reading', label: 'Manhwa', icon: Smartphone, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
-          MANHUA: { id: 'manhua', groupId: 'reading', label: 'Manhua', icon: Library, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
-          
-          GAME: { id: 'game', groupId: 'game_group', label: 'Juego', icon: Gamepad2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-          
-          MUSIC: { id: 'music', groupId: 'audio', label: 'Música', icon: Headphones, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
+          MOVIE: { id: 'movie', groupId: 'visual', label: 'Película', icon: Clapperboard, color: 'text-blue-400', unit: 'min' },
+          TV: { id: 'tv', groupId: 'visual', label: 'Serie', icon: Tv, color: 'text-purple-400', unit: 'eps' },
+          ANIME: { id: 'anime', groupId: 'visual', label: 'Anime', icon: Ghost, color: 'text-pink-400', unit: 'eps' },
+          BOOK: { id: 'book', groupId: 'reading', label: 'Libro', icon: BookOpen, color: 'text-amber-400', unit: 'págs' },
+          MANGA: { id: 'manga', groupId: 'reading', label: 'Manga', icon: BookOpen, color: 'text-orange-400', unit: 'caps' },
+          MANHWA: { id: 'manhwa', groupId: 'reading', label: 'Manhwa', icon: Smartphone, color: 'text-green-400', unit: 'caps' },
+          GAME: { id: 'game', groupId: 'game_group', label: 'Juego', icon: Gamepad2, color: 'text-emerald-400', unit: 'hrs' },
+          MUSIC: { id: 'music', groupId: 'audio', label: 'Música', icon: Headphones, color: 'text-rose-400', unit: 'min' },
         };
 
         const STATUSES = {
-            COMPLETED: { id: 'completed', label: 'Completado', icon: CheckCircle2, color: 'text-emerald-500' },
-            WATCHING: { id: 'watching', label: 'En Progreso', icon: Eye, color: 'text-blue-500' },
-            PLANNED: { id: 'planned', label: 'Planeado', icon: Bookmark, color: 'text-gray-400' },
-            DROPPED: { id: 'dropped', label: 'Abandonado', icon: XCircle, color: 'text-red-500' },
-            REWATCH: { id: 'rewatch', label: 'Rewatch', icon: RotateCcw, color: 'text-purple-500' }
+            COMPLETED: { id: 'completed', label: 'Completado', icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+            WATCHING: { id: 'watching', label: 'Viendo / Jugando', icon: Eye, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+            PLANNED: { id: 'planned', label: 'Planeado', icon: Bookmark, color: 'text-gray-400', bg: 'bg-gray-500/10' },
+            DROPPED: { id: 'dropped', label: 'Abandonado', icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/10' },
+            REWATCH: { id: 'rewatch', label: 'Rewatch', icon: RotateCcw, color: 'text-purple-500', bg: 'bg-purple-500/10' }
+        };
+
+        const COMPRESSION_LEVELS = {
+            NONE: { label: 'Nada', size: null, quality: 1.0 },
+            HIGH: { label: 'Alta', size: 1600, quality: 0.9 }, // Aumentado calidad
+            MEDIUM: { label: 'Media', size: 1200, quality: 0.8 }, // Aumentado calidad
+            LOW: { label: 'Baja', size: 600, quality: 0.6 }
         };
 
         const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
         const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
-        const formatDuration = (minutes) => {
-            if (!minutes) return '0m';
-            const h = Math.floor(minutes / 60);
-            const m = minutes % 60;
-            return h === 0 ? `${m}m` : `${h}h ${m}m`;
+        const formatDuration = (m) => { if(!m) return '0m'; const h = Math.floor(m / 60); const min = m % 60; return h > 0 ? `${h}h ${min}m` : `${min}m`; };
+
+        /** CONVERTER FOR LEGACY DATA */
+        const convertFromLegacy = (item) => {
+            const rating = item.rating > 5 ? item.rating : (item.rating * 20); // 0-5 to 0-100
+            return {
+                id: item.id || generateId(),
+                title: item.title,
+                image: item.image,
+                category: item.type || 'movie',
+                status: item.status || 'completed',
+                rating: parseInt(rating) || 0,
+                mainstreamScore: item.hypeScore || item.mainstreamScore || 0,
+                totalMinutes: item.timeSpent || item.totalMinutes || 0,
+                progress: item.progress || 0,
+                total: item.total || 0,
+                unitDuration: 0,
+                tags: item.genres || item.tags || [],
+                review: item.review || '',
+                overview: item.overview || '',
+                date: item.lastEdited || item.createdAt || new Date().toISOString(),
+                author: item.author || item.creator || '', 
+                year: item.year || (item.date ? item.date.split('-')[0] : '') || '',
+                startDate: '',
+                finishDate: ''
+            };
         };
 
-        /**
-         * ==========================================
-         * API SERVICE
-         * ==========================================
-         */
-        const APIService = {
-            searchTMDB: async (query, type, apiKey) => {
-                if (!apiKey) return [];
-                const endpoint = type === 'movie' ? 'movie' : 'tv';
-                try {
-                    const res = await fetch(`https://api.themoviedb.org/3/search/${endpoint}?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=es-ES`);
-                    const data = await res.json();
-                    return data.results ? data.results.slice(0, 5).map(item => ({
-                        id: item.id,
-                        title: item.title || item.name,
-                        year: (item.release_date || item.first_air_date || '').split('-')[0],
-                        poster: item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : null,
-                        rating: item.vote_average * 10,
-                        mainstreamScore: Math.round(item.popularity > 100 ? 100 : item.popularity),
-                        overview: item.overview,
-                        source: 'TMDB'
-                    })) : [];
-                } catch(e) { return []; }
+        const StorageManager = {
+            dbName: 'ChronicleDB',
+            storeName: 'AppState',
+            async initDB() {
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open(this.dbName, 1);
+                    req.onupgradeneeded = (e) => e.target.result.createObjectStore(this.storeName);
+                    req.onsuccess = (e) => resolve(e.target.result);
+                    req.onerror = (e) => reject(e);
+                });
             },
-            searchRAWG: async (query, apiKey) => {
-                if (!apiKey) return [];
-                try {
-                    const res = await fetch(`https://api.rawg.io/api/games?key=${apiKey}&search=${encodeURIComponent(query)}&page_size=5`);
-                    const data = await res.json();
-                    return data.results ? data.results.map(item => ({
-                        id: item.id,
-                        title: item.name,
-                        year: (item.released || '').split('-')[0],
-                        poster: item.background_image,
-                        rating: item.metacritic,
-                        mainstreamScore: item.rating ? item.rating * 20 : 0, // RAWG Rating is 1-5
-                        genres: item.genres.map(g => g.name).join(', '),
-                        source: 'RAWG'
-                    })) : [];
-                } catch(e) { return []; }
+            async save(data, type) {
+                if (type === 'localstorage') {
+                    try { localStorage.setItem('chronicle_data', JSON.stringify(data)); return true; } 
+                    catch(e) { alert("LocalStorage lleno. Cambia a IndexedDB."); return false; }
+                } else {
+                    try { const db = await this.initDB(); const tx = db.transaction(this.storeName, 'readwrite'); tx.objectStore(this.storeName).put(data, 'root'); return true; } 
+                    catch(e) { console.error("IDB Error", e); return false; }
+                }
             },
-            searchBooks: async (query) => {
-                try {
-                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
-                    const data = await res.json();
-                    return (data.items || []).map(item => ({
-                        id: item.id,
-                        title: item.volumeInfo.title,
-                        year: (item.volumeInfo.publishedDate || '').split('-')[0],
-                        poster: item.volumeInfo.imageLinks?.thumbnail,
-                        author: item.volumeInfo.authors?.join(', '),
-                        rating: item.volumeInfo.averageRating ? item.volumeInfo.averageRating * 20 : 0,
-                        mainstreamScore: item.volumeInfo.ratingsCount ? Math.min(item.volumeInfo.ratingsCount / 10, 100) : 0,
-                        source: 'Google Books'
-                    }));
-                } catch(e) { return []; }
-            },
-            // Handles Anime, Manga, Manhwa, Manhua via Jikan
-            searchJikan: async (query, type = 'anime') => {
-                try {
-                    await new Promise(r => setTimeout(r, 600)); // Rate limit
-                    const res = await fetch(`https://api.jikan.moe/v4/${type}?q=${encodeURIComponent(query)}&limit=5`);
-                    const data = await res.json();
-                    return (data.data || []).map(item => ({
-                        id: item.mal_id,
-                        title: item.title,
-                        year: item.year || (item.aired?.from ? item.aired.from.split('-')[0] : (item.published?.from ? item.published.from.split('-')[0] : '')),
-                        poster: item.images?.jpg?.large_image_url,
-                        rating: item.score ? item.score * 10 : 0,
-                        mainstreamScore: item.members ? Math.min((item.members / 50000) * 100, 100) : 0,
-                        overview: item.synopsis,
-                        source: 'MyAnimeList'
-                    }));
-                } catch(e) { return []; }
-            },
-            getLastFmUser: async (user, apiKey) => {
-                 if (!user || !apiKey) return null;
-                 try {
-                     const res = await fetch(`https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=${apiKey}&format=json&limit=1`);
-                     const data = await res.json();
-                     const resTop = await fetch(`https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=${user}&api_key=${apiKey}&format=json&limit=5&period=7day`);
-                     const dataTop = await resTop.json();
-                     const track = data.recenttracks?.track?.[0];
-                     const isPlaying = track ? (track['@attr']?.nowplaying === 'true') : false;
-                     return {
-                         recent: track ? { name: track.name, artist: track.artist['#text'], album: track.album['#text'], image: track.image[2]['#text'], isPlaying } : null,
-                         topArtists: dataTop.topartists?.artist || []
-                     };
-                 } catch(e) { return null; }
+            async load(type) {
+                if (type === 'localstorage') {
+                    const d = localStorage.getItem('chronicle_data');
+                    return d ? JSON.parse(d) : null;
+                } else {
+                    try { const db = await this.initDB(); return new Promise((resolve) => { const req = db.transaction(this.storeName, 'readonly').objectStore(this.storeName).get('root'); req.onsuccess = () => resolve(req.result); req.onerror = () => resolve(null); }); } 
+                    catch(e) { return null; }
+                }
             }
         };
 
-        /**
-         * ==========================================
-         * STATE & CONTEXT
-         * ==========================================
-         */
+        const ImageUtils = {
+            compress: (base64, level, cropToVertical = false) => {
+                const settings = COMPRESSION_LEVELS[level] || COMPRESSION_LEVELS.MEDIUM;
+                if (!base64 || (!settings.size && !cropToVertical)) return Promise.resolve(base64);
+
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.src = base64;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        let width = img.width;
+                        let height = img.height;
+                        let sx = 0, sy = 0, sWidth = width, sHeight = height;
+
+                        if (cropToVertical) {
+                            const targetRatio = 2 / 3;
+                            const srcRatio = width / height;
+
+                            if (srcRatio > targetRatio) {
+                                sWidth = height * targetRatio;
+                                sx = (width - sWidth) / 2;
+                            } else {
+                                sHeight = width / targetRatio;
+                                sy = (height - sHeight) / 2;
+                            }
+                            width = sWidth;
+                            height = sHeight;
+                        }
+
+                        if (settings.size && width > settings.size) {
+                            const ratio = settings.size / width;
+                            width = settings.size;
+                            height = height * ratio;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        if (cropToVertical) {
+                            ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, width, height);
+                        } else {
+                            ctx.drawImage(img, 0, 0, width, height);
+                        }
+                        
+                        resolve(canvas.toDataURL('image/jpeg', settings.quality));
+                    };
+                    img.onerror = () => resolve(base64);
+                });
+            }
+        };
+
+        const APIService = {
+            async search(query, source, keys) {
+                if(query.length < 3) return [];
+                const promises = [];
+                if(keys.tmdbKey && (source==='ALL'||source==='visual')) {
+                    promises.push(fetch(`https://api.themoviedb.org/3/search/multi?api_key=${keys.tmdbKey}&query=${query}&language=es-ES`)
+                        .then(r=>r.json()).then(d=>d.results?.slice(0,3).filter(i=>i.media_type!=='person').map(i=>({
+                            id: i.id, title: i.title||i.name, year: (i.release_date||i.first_air_date||'').split('-')[0],
+                            poster: i.poster_path?`https://image.tmdb.org/t/p/w500${i.poster_path}`:null,
+                            rating: i.vote_average*10, mainstreamScore: Math.round(i.popularity>100?100:i.popularity),
+                            overview: i.overview, source: 'TMDB', type: i.media_type==='movie'?'movie':'tv', tags: []
+                        }))||[]));
+                }
+                if(keys.rawgKey && (source==='ALL'||source==='game_group')) {
+                    promises.push(fetch(`https://api.rawg.io/api/games?key=${keys.rawgKey}&search=${query}&page_size=3`)
+                        .then(r=>r.json()).then(d=>d.results?.map(i=>({
+                            id: i.id, title: i.name, year: (i.released||'').split('-')[0], poster: i.background_image,
+                            rating: i.metacritic||0, mainstreamScore: (i.rating||0)*20, overview: '',
+                            source: 'RAWG', type: 'game', tags: i.genres?.map(g=>g.name)||[]
+                        }))||[]));
+                }
+                
+                if(source==='ALL'||source==='visual'||source==='reading') {
+                    const fetchJikan = (t) => fetch(`https://api.jikan.moe/v4/${t}?q=${query}&limit=3`)
+                        .then(r=>r.json()).then(d=>d.data?.map(i=>({
+                            id: i.mal_id, 
+                            title: i.title, 
+                            year: i.year || (i.aired?.from ? i.aired.from.split('-')[0] : '') || '', 
+                            poster: i.images?.jpg?.large_image_url,
+                            rating: (i.score||0)*10, 
+                            mainstreamScore: Math.min((i.members||0)/2000, 100),
+                            overview: i.synopsis, 
+                            source: 'MAL', 
+                            type: t==='anime'?'anime':'manga', 
+                            tags: i.genres?.map(g=>g.name)||[],
+                            author: t==='anime' ? (i.studios?.[0]?.name) : (i.authors?.[0]?.name)
+                        }))||[]);
+                    
+                    if(source==='ALL'||source==='visual') promises.push(fetchJikan('anime'));
+                    if(source==='ALL'||source==='reading') promises.push(fetchJikan('manga'));
+                }
+
+                if(keys.lastfmKey && (source==='ALL'||source==='audio')) {
+                    promises.push(fetch(`https://ws.audioscrobbler.com/2.0/?method=album.search&album=${query}&api_key=${keys.lastfmKey}&format=json&limit=3`)
+                        .then(r=>r.json()).then(d=>d.results?.albummatches?.album?.map(i=>({
+                            id: i.url, title: i.name, year: '', poster: i.image?.[2]?.['#text'] || null, rating: 0, mainstreamScore: 0, overview: `Artista: ${i.artist}`, source: 'Last.fm', type: 'music', tags: [], author: i.artist
+                        }))||[]));
+                }
+                if(source==='ALL'||source==='reading') {
+                    promises.push(fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=3`)
+                        .then(r=>r.json()).then(d=>d.items?.map(i=>({
+                            id: i.id, 
+                            title: i.volumeInfo.title, 
+                            year: (i.volumeInfo.publishedDate||'').split('-')[0],
+                            poster: i.volumeInfo.imageLinks?.thumbnail, 
+                            rating: (i.volumeInfo.averageRating||0)*20,
+                            mainstreamScore: 0, 
+                            overview: i.volumeInfo.description, 
+                            source: 'Google', 
+                            type: 'book', 
+                            tags: i.volumeInfo.categories||[],
+                            author: i.volumeInfo.authors?.[0]
+                        }))||[]));
+                }
+                return (await Promise.all(promises)).flat().filter(Boolean);
+            },
+            async getLastFm(user, key) {
+                 if(!user || !key) return null;
+                 try {
+                     const getImg = (arr) => { 
+                         if(!arr || !Array.isArray(arr)) return null; 
+                         const img = arr.find(i=>i.size==='extralarge') || arr.find(i=>i.size==='large') || arr[arr.length-1]; 
+                         return img ? img['#text'] : null; 
+                     };
+
+                     const [recent, artists, tracks, albums, info] = await Promise.all([
+                         fetch(`https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${user}&api_key=${key}&format=json&limit=10`).then(r=>r.json()), 
+                         fetch(`https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&user=${user}&api_key=${key}&format=json&limit=6&period=7day`).then(r=>r.json()),
+                         fetch(`https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${user}&api_key=${key}&format=json&limit=6&period=1month`).then(r=>r.json()), 
+                         fetch(`https://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=${user}&api_key=${key}&format=json&limit=6&period=7day`).then(r=>r.json()),
+                         fetch(`https://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${user}&api_key=${key}&format=json`).then(r=>r.json())
+                     ]);
+                     
+                     const track = recent.recenttracks?.track?.[0];
+                     
+                     return {
+                         recent: track ? { 
+                            name: track.name, 
+                            artist: track.artist['#text'], 
+                            album: track.album['#text'], 
+                            image: getImg(track.image), 
+                            isPlaying: track['@attr']?.nowplaying === 'true' 
+                        } : null,
+                         history: recent.recenttracks?.track?.slice(0, 10).map(t => ({
+                             name: t.name,
+                             artist: t.artist['#text'],
+                             image: getImg(t.image),
+                             date: t.date ? t.date['#text'] : 'Ahora'
+                         })) || [],
+                         topArtists: artists.topartists?.artist?.map(a=>({name:a.name, playcount:a.playcount, image:getImg(a.image)})) || [],
+                         topTracks: tracks.toptracks?.track?.map(t=>({name:t.name, artist:t.artist.name, image:getImg(t.image)})) || [],
+                         topAlbums: albums.topalbums?.album?.map(a=>({name:a.name, artist:a.artist.name, image:getImg(a.image)})) || [],
+                         userInfo: info.user ? {
+                             scrobbles: info.user.playcount,
+                             artists: info.user.artist_count || 0,
+                             track_count: info.user.track_count || 0,
+                             album_count: info.user.album_count || 0,
+                         } : null
+                     };
+                 } catch(e) { console.error("LastFM Error:", e); return null; }
+            }
+        };
+
         const AppContext = createContext();
         const initialState = {
           entries: [],
-          settings: { tmdbKey: '', rawgKey: '', lastfmKey: '', lastfmUser: '' },
-          profile: { name: 'Viajero', bio: 'Explorando mundos digitales.', avatar: '', banner: '' },
-          ui: { modalOpen: false, settingsOpen: false, shareOpen: false, searchOpen: false, activeCategory: 'all', editingEntry: null, shareEntry: null }
+          settings: { storageType: 'indexeddb', compression: 'MEDIUM', setup: false, tmdbKey: '', lastfmKey: '', lastfmUser: '', rawgKey: '' },
+          profile: { name: 'Viajero', bio: 'Explorando mundos.', avatar: '', banner: '' },
+          ui: { modalMode: null, focusedEntry: null, activeGroup: 'dashboard', searchOpen: false, searchQuery: '', settingsOpen: false, importConflict: null, filterCategory: 'all', filterStatus: 'all' }
         };
 
         const reducer = (state, action) => {
           switch (action.type) {
-            case 'LOAD_DATA': return { ...state, entries: action.payload.entries || [], settings: { ...state.settings, ...action.payload.settings }, profile: { ...state.profile, ...(action.payload.profile || {}) } };
-            case 'ADD_ENTRY': return { ...state, entries: [action.payload, ...state.entries] };
-            case 'UPDATE_ENTRY': return { ...state, entries: state.entries.map(e => e.id === action.payload.id ? action.payload : e) };
+            case 'INIT': return { ...state, ...action.payload };
+            case 'COMPLETE_SETUP': return { ...state, settings: { ...state.settings, ...action.payload, setup: true } };
+            case 'SAVE_ENTRY': 
+                const exists = state.entries.find(e => e.id === action.payload.id);
+                const updatedEntries = exists ? state.entries.map(e => e.id === action.payload.id ? action.payload : e) : [action.payload, ...state.entries];
+                return { ...state, entries: updatedEntries };
             case 'DELETE_ENTRY': return { ...state, entries: state.entries.filter(e => e.id !== action.payload) };
-            case 'UPDATE_SETTINGS': return { ...state, settings: { ...state.settings, ...action.payload } };
             case 'UPDATE_PROFILE': return { ...state, profile: { ...state.profile, ...action.payload } };
+            case 'UPDATE_SETTINGS': return { ...state, settings: { ...state.settings, ...action.payload } };
             case 'SET_UI': return { ...state, ui: { ...state.ui, ...action.payload } };
+            case 'SET_SEARCH': return { ...state, ui: { ...state.ui, searchQuery: action.payload } };
+            case 'SET_FILTER_CAT': return { ...state, ui: { ...state.ui, filterCategory: action.payload } };
+            case 'SET_FILTER_STAT': return { ...state, ui: { ...state.ui, filterStatus: action.payload } };
+            case 'MERGE_DATA': 
+                const currentIds = new Set(state.entries.map(e => e.id));
+                const newEntries = action.payload.entries.filter(e => !currentIds.has(e.id));
+                return { ...state, entries: [...state.entries, ...newEntries], profile: state.profile.name === 'Viajero' ? (action.payload.profile || state.profile) : state.profile };
             default: return state;
           }
         };
 
-        /**
-         * ==========================================
-         * COMPONENTS
-         * ==========================================
-         */
-        const Button = ({ children, onClick, variant = 'primary', className = '', ...props }) => {
-          const variants = {
-            primary: "bg-white/5 hover:bg-white/10 text-white border border-white/5 backdrop-blur-md",
-            accent: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 border border-transparent",
-            ghost: "hover:bg-white/5 text-gray-400 hover:text-white border-transparent",
-            danger: "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20"
-          };
-          return (
-            <button className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 text-xs md:text-sm ${variants[variant]} ${className}`} onClick={onClick} {...props}>
-              {children}
-            </button>
-          );
+        /* COMPONENTS */
+        const Button = ({ children, variant='primary', onClick, className='' }) => {
+            const styles = { primary: "bg-white/5 hover:bg-white/10 text-white border border-white/5", accent: "bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20", danger: "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20" };
+            return <button onClick={onClick} className={`px-4 py-2 rounded-xl font-medium transition-all active:scale-95 flex items-center justify-center gap-2 text-sm ${styles[variant]} ${className}`}>{children}</button>;
         };
 
-        const Input = ({ label, className = '', ...props }) => (
-          <div className="flex flex-col gap-1.5 w-full">
-            {label && <label className="text-[10px] uppercase tracking-wider text-gray-500 font-bold ml-1">{label}</label>}
-            <input className={`bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all w-full ${className}`} {...props} />
-          </div>
+        const FileUpload = ({ onUpload, className, children }) => (
+            <label className={`cursor-pointer ${className}`}>
+                <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                    const file = e.target.files[0];
+                    if(file) {
+                        const reader = new FileReader();
+                        reader.onload = async (ev) => {
+                            // Force vertical crop for entries covers
+                            const compressed = await ImageUtils.compress(ev.target.result, 'MEDIUM', false);
+                            onUpload(compressed);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }} />
+                {children}
+            </label>
         );
 
-        // --- SHARE CARD MODAL ---
-        const ShareModal = () => {
+        /* MODAL DE CONFLICTO DE IMPORTACIÓN */
+        const ImportConflictModal = () => {
             const { state, dispatch } = useContext(AppContext);
-            const entry = state.ui.shareEntry;
-            if (!state.ui.shareOpen || !entry) return null;
-
-            const cat = CATEGORIES[entry.category.toUpperCase()] || CATEGORIES.MOVIE;
-            const status = Object.values(STATUSES).find(s => s.id === entry.status);
-
-            return (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" onClick={() => dispatch({type: 'SET_UI', payload: {shareOpen: false}})}>
-                    <div className="bg-[#09090b] border border-white/10 p-1 rounded-3xl max-w-sm w-full shadow-2xl animate-in slide-up" onClick={e => e.stopPropagation()}>
-                        <div className="bg-gradient-to-br from-indigo-950 to-black rounded-[20px] p-6 relative overflow-hidden flex flex-col items-center text-center">
-                            {/* Decorative Blobs */}
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-3xl rounded-full"></div>
-                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-pink-500/20 blur-3xl rounded-full"></div>
-                            
-                            {/* Card Content */}
-                            <div className="relative z-10 w-full flex flex-col items-center">
-                                <div className="w-40 h-60 rounded-lg shadow-2xl mb-6 relative group overflow-hidden border-2 border-white/10">
-                                    {entry.image ? <img src={entry.image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-800 flex items-center justify-center"><cat.icon size={40} /></div>}
-                                </div>
-                                
-                                <h2 className="text-2xl font-black text-white leading-tight mb-1">{entry.title}</h2>
-                                <p className="text-gray-400 text-sm mb-4">{cat.label} • {entry.date ? new Date(entry.date).getFullYear() : 'Unknown'}</p>
-                                
-                                <div className="flex gap-2 mb-6">
-                                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-white/10 border border-white/5`}>{status?.label}</span>
-                                     {entry.rating > 0 && <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">{entry.rating}/100</span>}
-                                </div>
-
-                                {entry.review && (
-                                    <div className="bg-white/5 p-4 rounded-xl text-sm italic text-gray-300 w-full relative mb-4">
-                                        <Quote size={16} className="absolute top-2 left-2 text-indigo-500/50" />
-                                        "{entry.review}"
-                                    </div>
-                                )}
-
-                                <div className="flex justify-between w-full items-end border-t border-white/10 pt-4 mt-2">
-                                    <div className="text-left">
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Chronicle v2</div>
-                                        <div className="text-xs text-gray-300">@{state.profile.name}</div>
-                                    </div>
-                                    <div className="text-right">
-                                         <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-pink-400">{entry.rating >= 90 ? 'MASTERPIECE' : entry.rating >= 70 ? 'GREAT' : 'GOOD'}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-4 flex justify-center text-xs text-gray-500">
-                            Toma una captura de pantalla para compartir
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- DASHBOARD WIDGETS ---
-        const StatCard = ({ label, value, sub, icon: Icon, color, className }) => (
-            <div className={`glass-panel p-5 rounded-2xl flex flex-col justify-between h-full ${className}`}>
-                <div className="flex justify-between items-start mb-4">
-                    <div className={`p-2.5 rounded-xl ${color.replace('text-', 'bg-')}/10 ${color}`}><Icon size={20} /></div>
-                    {sub && <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-white/5 px-2 py-1 rounded-md">{sub}</span>}
-                </div>
-                <div><h3 className="text-2xl font-bold text-white tracking-tight">{value}</h3><p className="text-xs text-gray-500 font-medium uppercase tracking-wide mt-1">{label}</p></div>
-            </div>
-        );
-
-        const RecentlyAdded = ({ entries, dispatch }) => (
-            <div className="mb-8">
-                <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"><Zap size={14} className="text-yellow-400"/> Añadido Recientemente</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {entries.slice(0, 6).map(e => (
-                        <div key={e.id} className="group relative aspect-[2/3] rounded-xl overflow-hidden cursor-pointer" onClick={() => dispatch({ type: 'SET_UI', payload: { editingEntry: e, modalOpen: true } })}>
-                            {e.image ? <img src={e.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" /> : <div className="w-full h-full bg-white/5 flex items-center justify-center"><Ghost/></div>}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                                <span className="text-xs font-bold text-white line-clamp-2">{e.title}</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-
-        const MusicStats = ({ entries, user, apiKey }) => {
-            const [fmData, setFmData] = useState(null);
-            useEffect(() => { APIService.getLastFmUser(user, apiKey).then(setFmData); }, [user]);
-            const musicEntries = entries.filter(e => e.category === 'music');
-
-            return (
-                <div className="glass-panel p-6 rounded-2xl mb-8">
-                     <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"><Headphones size={14} className="text-rose-400"/> Estadísticas Musicales</h3>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                         <div>
-                             <div className="text-3xl font-black text-white mb-1">{musicEntries.length}</div>
-                             <div className="text-xs text-gray-500 uppercase tracking-wide mb-6">Álbumes / Artistas Guardados</div>
-                             {fmData?.recent && (
-                                 <div className="bg-white/5 p-4 rounded-xl flex items-center gap-4">
-                                     {fmData.recent.image ? <img src={fmData.recent.image} className="w-12 h-12 rounded-md" /> : <div className="w-12 h-12 bg-white/10 rounded-md"/>}
-                                     <div>
-                                         <div className="text-[10px] text-rose-400 font-bold uppercase">{fmData.recent.isPlaying ? 'Escuchando Ahora' : 'Última Canción'}</div>
-                                         <div className="text-white font-bold text-sm line-clamp-1">{fmData.recent.name}</div>
-                                         <div className="text-gray-400 text-xs">{fmData.recent.artist}</div>
-                                     </div>
-                                 </div>
-                             )}
-                         </div>
-                         <div>
-                             <h4 className="text-xs text-gray-500 font-bold uppercase mb-3">Top Artistas (Last.fm 7d)</h4>
-                             <div className="space-y-2">
-                                 {fmData?.topArtists.map((a, i) => (
-                                     <div key={a.name} className="flex justify-between items-center text-sm">
-                                         <span className="text-gray-300"><span className="text-gray-600 font-mono mr-2">0{i+1}</span> {a.name}</span>
-                                         <span className="text-xs text-gray-500">{a.playcount} scrobbles</span>
-                                     </div>
-                                 ))}
-                                 {!fmData && <div className="text-sm text-gray-600 italic">Configura Last.fm para ver datos</div>}
-                             </div>
-                         </div>
-                     </div>
-                </div>
-            );
-        };
-
-        const DashboardView = ({ entries, profile, settings, dispatch }) => {
-            const stats = useMemo(() => {
-                const totalMins = entries.reduce((acc, cur) => acc + (cur.totalMinutes || 0), 0);
-                const days = Math.floor(totalMins / (24 * 60));
-                const ratedEntries = entries.filter(e => e.rating > 0);
-                const avgRating = ratedEntries.length ? (ratedEntries.reduce((a, b) => a + b.rating, 0) / ratedEntries.length / 10).toFixed(1) : "0.0";
-                return { days, avgRating, count: entries.length };
-            }, [entries]);
-
-            return (
-                <div className="animate-in slide-up max-w-5xl mx-auto pb-20">
-                    <div className="relative overflow-hidden rounded-3xl glass-panel p-8 mb-8 group">
-                        <div className="absolute inset-0 z-0">{profile.banner ? <img src={profile.banner} className="w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-700" /> : <div className="w-full h-full bg-gradient-to-br from-indigo-900/40 via-purple-900/40 to-black/80" />}<div className="absolute inset-0 bg-gradient-to-r from-[#09090b] via-[#09090b]/80 to-transparent"></div></div>
-                        <div className="relative z-10 flex items-center gap-6">
-                            <div className="w-20 h-20 rounded-full border-2 border-white/10 overflow-hidden shadow-2xl">{profile.avatar ? <img src={profile.avatar} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-indigo-500 flex items-center justify-center text-2xl font-bold">{profile.name[0]}</div>}</div>
-                            <div><h1 className="text-3xl font-bold text-white mb-1">{profile.name}</h1><p className="text-gray-400 max-w-lg text-sm">{profile.bio}</p></div>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <StatCard label="Tiempo" value={`${stats.days} Días`} icon={Clock} color="text-blue-400" />
-                        <StatCard label="Total Items" value={stats.count} icon={CheckCircle2} color="text-emerald-400" />
-                        <StatCard label="Promedio" value={stats.avgRating} icon={Star} color="text-yellow-400" />
-                        <StatCard label="Favoritos" value={entries.filter(e=>e.favorite).length} icon={Heart} color="text-rose-400" />
-                    </div>
-
-                    <RecentlyAdded entries={entries} dispatch={dispatch} />
-                    <MusicStats entries={entries} user={settings.lastfmUser} apiKey={settings.lastfmKey} />
-                </div>
-            );
-        };
-
-        // --- ENTRY MODAL ---
-        const EntryModal = () => {
-            const { state, dispatch } = useContext(AppContext);
-            const entry = state.ui.editingEntry;
-            const [form, setForm] = useState(entry || {});
-            const [tagInput, setTagInput] = useState("");
-            const [timeMode, setTimeMode] = useState('manual');
-            const [mainstreamMode, setMainstreamMode] = useState('manual');
-            const [eps, setEps] = useState(0);
-            const [duration, setDuration] = useState(0);
-
-            useEffect(() => { 
-                if (entry) {
-                    setForm(entry);
-                    setEps(entry.episodes || 0);
-                    setDuration(entry.durationPerEp || 0);
-                }
-            }, [entry]);
-
-            useEffect(() => { if (timeMode === 'auto') setForm(f => ({ ...f, totalMinutes: eps * duration, episodes: eps, durationPerEp: duration })); }, [eps, duration, timeMode]);
-
-            if (!state.ui.modalOpen || !entry) return null;
-
-            const handleKeyDownTags = (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (!tagInput.trim()) return;
-                    const newTags = [...(form.tags || []), tagInput.trim()];
-                    setForm({ ...form, tags: newTags });
-                    setTagInput("");
-                }
-            };
-            const removeTag = (t) => setForm({ ...form, tags: form.tags.filter(tag => tag !== t) });
+            const { importConflict } = state.ui;
             
-            const handleSave = () => {
-                if (state.entries.some(e => e.id === form.id)) dispatch({ type: 'UPDATE_ENTRY', payload: form });
-                else dispatch({ type: 'ADD_ENTRY', payload: form });
-                dispatch({ type: 'SET_UI', payload: { modalOpen: false, editingEntry: null } });
+            if (!importConflict) return null;
+
+            const handleMerge = () => {
+                dispatch({ type: 'MERGE_DATA', payload: importConflict });
+                dispatch({ type: 'SET_UI', payload: { importConflict: null } });
+                setTimeout(() => window.location.reload(), 500); 
+            };
+
+            const handleOverwrite = () => {
+                dispatch({ type: 'INIT', payload: { ...initialState, ...importConflict, settings: { ...state.settings, ...(importConflict.settings || {}) } } });
+                dispatch({ type: 'SET_UI', payload: { importConflict: null } });
+                setTimeout(() => window.location.reload(), 500); 
             };
 
             return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => dispatch({ type: 'SET_UI', payload: { modalOpen: false } })}>
-                    <div className="relative w-full max-w-2xl bg-[#09090b] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in slide-up" onClick={e=>e.stopPropagation()}>
-                        <div className="h-32 bg-gray-900 relative">
-                             {form.image ? <img src={form.image} className="w-full h-full object-cover opacity-40 blur-sm" /> : <div className="w-full h-full bg-indigo-900/20" />}
-                             <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] to-transparent" />
-                             <div className="absolute bottom-0 left-0 p-6 w-full flex justify-between items-end">
-                                 <h2 className="text-2xl font-bold text-white shadow-black drop-shadow-lg line-clamp-1 mr-4">{form.title || 'Nueva Entrada'}</h2>
-                                 <div className="flex gap-2 shrink-0">
-                                     <button onClick={() => setForm({...form, favorite: !form.favorite})} className={`p-2 rounded-xl border ${form.favorite ? 'bg-rose-500 text-white border-rose-500' : 'bg-black/40 text-gray-400 border-white/10'}`}><Heart size={16} fill={form.favorite ? "currentColor" : "none"} /></button>
-                                     <Button variant="accent" onClick={handleSave} className="py-1 px-4 h-9">Guardar</Button>
-                                 </div>
-                             </div>
+                <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md">
+                    <div className="bg-[#09090b] border border-white/10 p-6 rounded-2xl max-w-sm w-full animate-scale shadow-2xl">
+                        <div className="flex flex-col items-center text-center mb-6">
+                            <div className="w-12 h-12 bg-cyan-900/30 rounded-full flex items-center justify-center mb-3 text-cyan-400"><FileDown size={24}/></div>
+                            <h3 className="text-lg font-bold text-white">Importar Datos</h3>
+                            <p className="text-sm text-gray-400 mt-1">Se han recibido {importConflict.entries?.length || 0} entradas. ¿Qué deseas hacer?</p>
+                            <div className="bg-yellow-900/20 text-yellow-500 text-[10px] p-2 rounded mt-2 border border-yellow-500/20">
+                                ⚠ Importar de versiones antiguas (Neocities) puede requerir ajustes manuales.
+                            </div>
                         </div>
-
-                        <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
-                            <div className="flex gap-6">
-                                <div className="w-32 flex-shrink-0 space-y-3">
-                                    <div className="aspect-[2/3] bg-black/50 rounded-lg overflow-hidden border border-white/10 relative group">
-                                        {form.image ? <img src={form.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-700"><ImageIcon /></div>}
-                                    </div>
-                                    <Input placeholder="URL Img" value={form.image || ''} onChange={e => setForm({...form, image: e.target.value})} className="text-xs py-1.5 px-2" />
-                                </div>
-                                <div className="flex-1 space-y-4">
-                                    <Input label="Título" value={form.title || ''} onChange={e => setForm({...form, title: e.target.value})} className="text-lg font-bold" />
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] uppercase text-gray-500 font-bold ml-1 mb-1 block">Categoría</label>
-                                            <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none" value={form.category || 'movie'} onChange={e => setForm({...form, category: e.target.value})}>
-                                                {Object.values(CATEGORIES).map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] uppercase text-gray-500 font-bold ml-1 mb-1 block">Estado</label>
-                                            <select className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none" value={form.status || 'completed'} onChange={e => setForm({...form, status: e.target.value})}>
-                                                {Object.values(STATUSES).map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <Input label="Fecha" type="date" value={form.date || ''} onChange={e => setForm({...form, date: e.target.value})} />
-                                        <div className="relative">
-                                             <Input label={`Rating (${form.rating || 0})`} type="range" min="0" max="100" value={form.rating || 0} onChange={e => setForm({...form, rating: parseInt(e.target.value)})} />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <hr className="border-white/5" />
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="glass-panel p-4 rounded-xl">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <label className="text-[10px] uppercase text-gray-500 font-bold">Tiempo</label>
-                                        <div className="flex bg-black/40 rounded-lg p-0.5"><button onClick={() => setTimeMode('auto')} className={`px-2 py-0.5 text-[10px] rounded-md ${timeMode==='auto'?'bg-indigo-600':'text-gray-500'}`}>AUTO</button><button onClick={() => setTimeMode('manual')} className={`px-2 py-0.5 text-[10px] rounded-md ${timeMode==='manual'?'bg-indigo-600':'text-gray-500'}`}>MAN</button></div>
-                                    </div>
-                                    {timeMode === 'auto' ? (
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <Input label="Eps" type="number" value={eps} onChange={e => setEps(parseInt(e.target.value) || 0)} />
-                                            <Input label="Dur (min)" type="number" value={duration} onChange={e => setDuration(parseInt(e.target.value) || 0)} />
-                                        </div>
-                                    ) : (
-                                        <Input label="Total Min" type="number" value={form.totalMinutes || 0} onChange={e => setForm({...form, totalMinutes: parseInt(e.target.value) || 0})} />
-                                    )}
-                                    <div className="text-right text-xs text-indigo-400 font-mono mt-2">{formatDuration(form.totalMinutes || 0)}</div>
-                                </div>
-
-                                <div className="glass-panel p-4 rounded-xl">
-                                    <div className="flex justify-between items-center mb-3">
-                                         <label className="text-[10px] uppercase text-gray-500 font-bold">Mainstream</label>
-                                         <div className="flex bg-black/40 rounded-lg p-0.5"><button onClick={() => setMainstreamMode('auto')} className={`px-2 py-0.5 text-[10px] rounded-md ${mainstreamMode==='auto'?'bg-indigo-600':'text-gray-500'}`}>AUTO</button><button onClick={() => setMainstreamMode('manual')} className={`px-2 py-0.5 text-[10px] rounded-md ${mainstreamMode==='manual'?'bg-indigo-600':'text-gray-500'}`}>MAN</button></div>
-                                    </div>
-                                    {mainstreamMode === 'manual' ? (
-                                        <input type="range" min="0" max="100" className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500" value={form.mainstreamScore || 0} onChange={e => setForm({...form, mainstreamScore: parseInt(e.target.value)})} />
-                                    ) : (
-                                        <div className="text-center py-2 text-xs text-gray-400">Puntuación: <span className="text-purple-400 font-bold text-lg">{form.mainstreamScore || 0}</span> (API)</div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-[10px] uppercase text-gray-500 font-bold ml-1 mb-1 block">Etiquetas (Enter para añadir)</label>
-                                    <div className="flex flex-wrap gap-2 mb-2 bg-black/40 border border-white/10 rounded-xl p-2 min-h-[46px]">
-                                        {(form.tags || []).map(t => (
-                                            <span key={t} className="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-1 rounded-md flex items-center gap-1">
-                                                {t} <button onClick={() => removeTag(t)} className="hover:text-white"><X size={10}/></button>
-                                            </span>
-                                        ))}
-                                        <input className="bg-transparent text-sm text-white focus:outline-none flex-1 min-w-[100px]" placeholder={form.tags?.length ? "" : "Cyberpunk, Isekai..."} value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={handleKeyDownTags} />
-                                    </div>
-                                </div>
-                                <Input label="Sinopsis" value={form.overview || ''} onChange={e => setForm({...form, overview: e.target.value})} />
-                                <Input label="Reseña" value={form.review || ''} onChange={e => setForm({...form, review: e.target.value})} />
-                                <Button variant="danger" className="w-full mt-4" onClick={() => { dispatch({ type: 'DELETE_ENTRY', payload: form.id }); dispatch({ type: 'SET_UI', payload: { modalOpen: false } }); }}>Eliminar Entrada</Button>
-                            </div>
+                        <div className="space-y-3">
+                            <button onClick={handleMerge} className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2">
+                                <ArrowRightLeft size={16}/> Fusionar (Sin duplicados)
+                            </button>
+                            <button onClick={handleOverwrite} className="w-full py-3 bg-red-900/20 hover:bg-red-900/40 border border-red-500/20 text-red-400 rounded-xl font-bold text-sm flex items-center justify-center gap-2">
+                                <AlertTriangle size={16}/> Sobrescribir Todo
+                            </button>
+                            <button onClick={() => dispatch({type: 'SET_UI', payload: {importConflict: null}})} className="w-full py-2 text-gray-500 hover:text-white text-xs font-bold mt-2">Cancelar</button>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        const EntryCard = ({ entry, onClick, onShare }) => {
-          const cat = CATEGORIES[entry.category.toUpperCase()] || CATEGORIES.MOVIE;
-          const status = Object.values(STATUSES).find(s => s.id === entry.status) || STATUSES.COMPLETED;
-          return (
-            <div onClick={onClick} className="group relative bg-zinc-900/40 border border-white/5 hover:border-white/20 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/50 cursor-pointer flex flex-col h-full">
-              <div className="aspect-[2/3] w-full bg-zinc-950 relative overflow-hidden">
-                {entry.image ? <img src={entry.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100" /> : <div className={`w-full h-full flex items-center justify-center ${cat.bg}`}><cat.icon size={40} className={cat.color} /></div>}
-                <div className="absolute top-2 right-2 flex flex-col items-end gap-1"><div className={`bg-black/60 backdrop-blur-md px-2 py-1 rounded-md border ${cat.border} ${cat.color} text-[10px] font-bold uppercase`}>{cat.label}</div><div className={`bg-black/80 backdrop-blur-md px-2 py-1 rounded-md text-[10px] font-bold uppercase ${status.color}`}>{status.label}</div></div>
-                {entry.favorite && <div className="absolute top-2 left-2 text-rose-500 drop-shadow-md"><Heart size={18} fill="currentColor"/></div>}
-                <button onClick={(e) => { e.stopPropagation(); onShare(entry); }} className="absolute bottom-2 right-2 p-2 bg-black/60 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-indigo-600"><Share2 size={14} /></button>
-              </div>
-              <div className="p-4 flex-1 flex flex-col">
-                <div className="flex justify-between items-start mb-1"><h3 className="text-white font-bold leading-tight line-clamp-2 text-sm group-hover:text-indigo-400 transition-colors">{entry.title}</h3>{entry.rating > 0 && <span className={`text-xs font-bold px-1.5 py-0.5 rounded bg-white/5 ${entry.rating >= 80 ? 'text-emerald-400' : entry.rating >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>{entry.rating}</span>}</div>
-                <p className="text-[10px] text-gray-500 mb-2">{formatDate(entry.date)}</p>
-                <div className="mt-auto flex flex-wrap gap-1">{entry.tags?.slice(0,3).map(t => <span key={t} className="text-[9px] text-gray-400 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">{t}</span>)}</div>
-              </div>
-            </div>
-          );
-        };
+        const P2PSync = ({ state, dispatch }) => {
+            const [peer, setPeer] = useState(null);
+            const [myId, setMyId] = useState('');
+            const [connId, setConnId] = useState('');
+            const [status, setStatus] = useState('idle');
 
-        const CommandPalette = () => {
-          const { state, dispatch } = useContext(AppContext);
-          const [query, setQuery] = useState('');
-          const [results, setResults] = useState([]);
-          const [loading, setLoading] = useState(false);
-          const [searchSource, setSearchSource] = useState('ALL'); // 'ALL' or specific
-          const inputRef = useRef(null);
-          
-          useEffect(() => { if (state.ui.searchOpen) setTimeout(() => inputRef.current?.focus(), 100); }, [state.ui.searchOpen]);
+            useEffect(() => {
+                if (!window.Peer) return;
+                const shortId = Math.random().toString(36).substring(2, 6).toUpperCase();
+                const p = new window.Peer(shortId);
+                p.on('open', (id) => { setPeer(p); setMyId(id); });
+                p.on('connection', (conn) => {
+                    setStatus('connected');
+                    conn.on('data', (data) => {
+                        if (data.type === 'SYNC_DATA') {
+                            dispatch({ type: 'SET_UI', payload: { importConflict: data.payload } });
+                        }
+                    });
+                });
+                return () => p.destroy();
+            }, []);
 
-          const doSearch = async () => {
-               if (query.length < 3) return;
-               setLoading(true);
-               setResults([]);
-               
-               const promises = [];
-               const keys = state.settings;
-
-               // TMDB
-               if (keys.tmdbKey && (searchSource === 'ALL' || searchSource === 'MOVIE')) promises.push(APIService.searchTMDB(query, 'movie', keys.tmdbKey).then(r => r.map(i => ({...i, type: 'movie'}))));
-               if (keys.tmdbKey && (searchSource === 'ALL' || searchSource === 'TV')) promises.push(APIService.searchTMDB(query, 'tv', keys.tmdbKey).then(r => r.map(i => ({...i, type: 'tv'}))));
-               
-               // RAWG
-               if (keys.rawgKey && (searchSource === 'ALL' || searchSource === 'GAME')) promises.push(APIService.searchRAWG(query, keys.rawgKey).then(r => r.map(i => ({...i, type: 'game'}))));
-               
-               // Books
-               if (searchSource === 'ALL' || searchSource === 'BOOK') promises.push(APIService.searchBooks(query).then(r => r.map(i => ({...i, type: 'book'}))));
-               
-               // Anime/Manga (Jikan)
-               if (searchSource === 'ALL' || searchSource === 'ANIME') promises.push(APIService.searchJikan(query, 'anime').then(r => r.map(i => ({...i, type: 'anime'}))));
-               if (searchSource === 'ALL' || searchSource === 'MANGA') promises.push(APIService.searchJikan(query, 'manga').then(r => r.map(i => ({...i, type: 'manga'})))); // Covers manga/manhwa/manhua
-               
-               const allResults = (await Promise.all(promises)).flat();
-               setResults(allResults);
-               setLoading(false);
-          };
-
-          useEffect(() => { const t = setTimeout(doSearch, 800); return () => clearTimeout(t); }, [query, searchSource]);
-
-          if (!state.ui.searchOpen) return null;
-
-          const handleSelect = (item) => {
-            const newEntry = {
-              id: generateId(),
-              title: item.title,
-              category: item.type, // Map 'manga' from jikan correctly in modal if needed, or unify
-              image: item.poster,
-              rating: 0,
-              mainstreamScore: item.mainstreamScore || 0,
-              overview: item.overview || '',
-              tags: [],
-              date: new Date().toISOString().split('T')[0],
-              status: 'completed',
-              totalMinutes: 0
+            const connect = () => { if (!peer || !connId) return; const conn = peer.connect(connId); conn.on('open', () => { setStatus('connected'); }); };
+            const sendData = () => {
+                if (status !== 'connected' || !connId) return;
+                const conn = peer.connect(connId);
+                conn.on('open', () => { conn.send({ type: 'SYNC_DATA', payload: { entries: state.entries, profile: state.profile, settings: state.settings } }); alert('Datos enviados.'); });
             };
-            dispatch({ type: 'SET_UI', payload: { searchOpen: false, editingEntry: newEntry, modalOpen: true } });
-          };
 
-          return (
-            <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 bg-black/80 backdrop-blur-sm" onClick={() => dispatch({ type: 'SET_UI', payload: { searchOpen: false } })}>
-              <div className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[70vh] animate-in slide-up" onClick={e=>e.stopPropagation()}>
-                <div className="flex border-b border-white/10 bg-black/20 p-2 gap-2 overflow-x-auto scrollbar-hide">
-                    <button onClick={() => setSearchSource('ALL')} className={`px-3 py-1 rounded-lg text-xs font-bold ${searchSource==='ALL'?'bg-indigo-600 text-white':'text-gray-400 hover:bg-white/5'}`}>TODO</button>
-                    {Object.values(CATEGORIES).filter(c=>c.id!=='music').map(c => <button key={c.id} onClick={() => setSearchSource(c.id.toUpperCase())} className={`px-3 py-1 rounded-lg text-xs font-bold ${searchSource===c.id.toUpperCase()?'bg-white/10 text-white':'text-gray-400 hover:bg-white/5'}`}>{c.label}</button>)}
-                </div>
-                <div className="p-4 border-b border-white/10 flex items-center gap-3">
-                  <Search className="text-indigo-400" size={24} />
-                  <input ref={inputRef} placeholder="Busca en todas las dimensiones..." className="w-full bg-transparent text-xl text-white placeholder-gray-600 focus:outline-none" value={query} onChange={e => setQuery(e.target.value)} />
-                  {loading && <RefreshCw className="animate-spin text-gray-500" size={20} />}
-                </div>
-                <div className="overflow-y-auto p-2">
-                  {results.map((item) => (
-                    <button key={item.id+item.type} onClick={() => handleSelect(item)} className="w-full text-left p-3 rounded-xl hover:bg-white/5 flex gap-4 transition-colors group">
-                        <div className="w-10 h-14 bg-black/50 rounded flex-shrink-0 overflow-hidden">{item.poster ? <img src={item.poster} className="w-full h-full object-cover" /> : null}</div>
-                        <div>
-                            <h4 className="text-white font-medium group-hover:text-indigo-400 line-clamp-1">{item.title}</h4>
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                                <span className="uppercase font-bold text-[10px] bg-white/5 px-1 rounded">{item.type}</span>
-                                <span>{item.year}</span>
-                                <span>• {item.source}</span>
-                            </div>
+            return (
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10 mt-4">
+                    <h4 className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2"><Wifi size={14}/> Sincronización P2P</h4>
+                    <div className="space-y-3">
+                        <div className="text-xs text-gray-400">Tu ID: <span className="font-mono text-xl font-black text-white bg-cyan-900/50 border border-cyan-500/30 px-2 py-1 rounded ml-2 select-all tracking-widest">{myId || '...'}</span></div>
+                        <div className="flex gap-2">
+                            <input className="flex-1 bg-black/30 rounded-lg px-3 py-2 text-xs text-white outline-none border border-white/10 uppercase" placeholder="ID REMOTO" value={connId} onChange={e=>setConnId(e.target.value.toUpperCase())}/>
+                            <Button variant="primary" onClick={connect} className="py-1 px-3 text-xs">Conectar</Button>
                         </div>
-                        <Plus size={20} className="ml-auto opacity-0 group-hover:opacity-100 text-indigo-400" />
-                    </button>
-                  ))}
-                  {!query && <div className="p-12 text-center text-gray-600 flex flex-col items-center"><Globe className="mb-4 opacity-50" size={32}/><p>Buscador Universal</p><p className="text-xs mt-2">Busca en TMDB, RAWG, Google Books y MyAnimeList simultáneamente.</p></div>}
+                        {status === 'connected' && <div className="flex items-center gap-2 text-emerald-400 text-xs"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"/> Conectado <Button variant="accent" onClick={sendData} className="ml-auto py-1 px-3 text-xs">Enviar Datos</Button></div>}
+                    </div>
                 </div>
-              </div>
-            </div>
-          );
+            );
         };
 
         const SettingsDrawer = () => {
-          const { state, dispatch } = useContext(AppContext);
-          const [keys, setKeys] = useState(state.settings);
-          if (!state.ui.settingsOpen) return null;
-          return (
-            <div className="fixed inset-0 z-[70] flex justify-end bg-black/60 backdrop-blur-sm" onClick={() => dispatch({ type: 'SET_UI', payload: { settingsOpen: false } })}>
-              <div className="relative w-full max-w-md bg-zinc-950 border-l border-white/10 shadow-2xl h-full flex flex-col animate-in slide-up" onClick={e=>e.stopPropagation()}>
-                <div className="p-6 border-b border-white/10 flex justify-between items-center"><h2 className="text-xl font-bold text-white flex items-center gap-2"><Settings className="text-indigo-400" /> Ajustes</h2><button onClick={() => dispatch({ type: 'SET_UI', payload: { settingsOpen: false } })}><X className="text-gray-500" /></button></div>
-                <div className="p-6 space-y-6 overflow-y-auto flex-1">
-                  <div className="space-y-4">
-                      <Input label="Nombre" value={state.profile.name} onChange={e => dispatch({type: 'UPDATE_PROFILE', payload: {name: e.target.value}})} />
-                      <Input label="Bio" value={state.profile.bio} onChange={e => dispatch({type: 'UPDATE_PROFILE', payload: {bio: e.target.value}})} />
-                      <Input label="Avatar URL" value={state.profile.avatar} onChange={e => dispatch({type: 'UPDATE_PROFILE', payload: {avatar: e.target.value}})} />
-                      <Input label="Banner URL" value={state.profile.banner} onChange={e => dispatch({type: 'UPDATE_PROFILE', payload: {banner: e.target.value}})} />
-                  </div>
-                  <hr className="border-white/10" />
-                  <div className="space-y-4">
-                      <Input label="TMDB Key (Cine)" type="password" value={keys.tmdbKey || ''} onChange={e => setKeys({...keys, tmdbKey: e.target.value})} />
-                      <Input label="RAWG Key (Juegos)" type="password" value={keys.rawgKey || ''} onChange={e => setKeys({...keys, rawgKey: e.target.value})} />
-                      <Input label="Last.fm User" value={keys.lastfmUser || ''} onChange={e => setKeys({...keys, lastfmUser: e.target.value})} />
-                      <Input label="Last.fm Key" type="password" value={keys.lastfmKey || ''} onChange={e => setKeys({...keys, lastfmKey: e.target.value})} />
-                  </div>
+            const { state, dispatch } = useContext(AppContext);
+            const [config, setConfig] = useState(state.settings);
+            const [prof, setProf] = useState(state.profile);
+            const fileRef = useRef(null);
+
+            useEffect(() => { if(state.ui.settingsOpen) { setConfig(state.settings); setProf(state.profile); } }, [state.ui.settingsOpen, state.settings, state.profile]);
+            if (!state.ui.settingsOpen) return null;
+
+            const handleExport = (type) => {
+                const data = { entries: state.entries, profile: state.profile, settings: state.settings, exportDate: new Date().toISOString(), source: type };
+                const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = `chronicle_${type}_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            };
+
+            const handleImport = (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        if (!data.entries && data.items) {
+                             if(confirm("Formato antiguo detectado. ¿Convertir?")) {
+                                 data.entries = data.items.map(convertFromLegacy);
+                             }
+                        }
+                        const processImages = async () => {
+                             const compLevel = state.settings.compression || 'MEDIUM';
+                             if(data.profile?.avatar) data.profile.avatar = await ImageUtils.compress(data.profile.avatar, compLevel, false);
+                             if(data.profile?.banner) data.profile.banner = await ImageUtils.compress(data.profile.banner, compLevel, false);
+                             if(data.entries) {
+                                 for(let i=0; i<data.entries.length; i++) {
+                                     if(data.entries[i].image && data.entries[i].image.startsWith('data:')) {
+                                         // Force vertical crop for entries
+                                         data.entries[i].image = await ImageUtils.compress(data.entries[i].image, compLevel, true);
+                                     }
+                                 }
+                             }
+                             // Also import keys if present in settings
+                             if(data.settings) {
+                                 setConfig(prev => ({...prev, ...data.settings}));
+                             }
+                             dispatch({ type: 'SET_UI', payload: { importConflict: data, settingsOpen: false } });
+                        };
+                        processImages();
+                    } catch(err) { alert("Error JSON"); }
+                };
+                reader.readAsText(file);
+            };
+
+            const handleProfileUpload = async (file, field) => {
+                if(!file) return;
+                const compressed = await ImageUtils.compress(await new Promise(r=>{const rd=new FileReader(); rd.onload=e=>r(e.target.result); rd.readAsDataURL(file)}), config.compression, false);
+                setProf(p => ({...p, [field]: compressed}));
+            };
+            
+            // Watch for storage change to reload data
+            const handleStorageChange = (newType) => {
+                setConfig({...config, storageType: newType});
+                // Trigger reload via window reload or specialized dispatch
+                // Since this app loads data on mount, reloading page is safest to switch context completely
+                // But let's try to just update state if possible. 
+                // For now, save current config and alert user to reload is better or auto-reload.
+                // We'll update state locally and let user hit save, then reload.
+            };
+
+            return (
+                <div className="fixed inset-0 z-[70] flex justify-end bg-black/60 backdrop-blur-sm" onClick={() => dispatch({ type: 'SET_UI', payload: { settingsOpen: false } })}>
+                    <div className="relative w-full max-w-md bg-[#09090b] border-l border-white/10 h-full p-6 animate-slide flex flex-col" onClick={e=>e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-white">Configuración</h2><button onClick={() => dispatch({ type: 'SET_UI', payload: { settingsOpen: false } })}><X className="text-gray-500"/></button></div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pr-2">
+                            <section className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                <h3 className="text-xs font-bold text-cyan-400 uppercase mb-3 flex items-center gap-2"><HardDrive size={14}/> Datos</h3>
+                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                    <button onClick={() => setConfig({...config, storageType: 'localstorage'})} className={`py-2 px-3 rounded text-xs font-bold border ${config.storageType === 'localstorage' ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-black border-white/10 text-gray-500'}`}>LocalStorage</button>
+                                    <button onClick={() => setConfig({...config, storageType: 'indexeddb'})} className={`py-2 px-3 rounded text-xs font-bold border ${config.storageType === 'indexeddb' ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-black border-white/10 text-gray-500'}`}>IndexedDB</button>
+                                </div>
+                                
+                                <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2">Compresión Imágenes</h4>
+                                <div className="grid grid-cols-4 gap-1 mb-6">
+                                    {Object.entries(COMPRESSION_LEVELS).map(([k, v]) => (
+                                        <button key={k} onClick={() => setConfig({...config, compression: k})} className={`py-1 rounded text-[10px] font-bold border ${config.compression === k ? 'bg-cyan-900/50 text-cyan-400 border-cyan-500/50' : 'bg-transparent text-gray-600 border-white/5'}`}>{v.label}</button>
+                                    ))}
+                                </div>
+
+                                <div className="flex gap-2 mb-2">
+                                    <button onClick={() => handleExport('localstorage')} className="flex-1 py-2 bg-black border border-white/10 rounded text-xs text-gray-300 flex items-center justify-center gap-2"><Download size={12}/> Backup LS</button>
+                                    <button onClick={() => handleExport('indexeddb')} className="flex-1 py-2 bg-black border border-white/10 rounded text-xs text-gray-300 flex items-center justify-center gap-2"><Download size={12}/> Backup IDB</button>
+                                </div>
+                                <label className="w-full py-3 bg-cyan-900/20 border border-cyan-500/30 text-cyan-400 rounded text-xs font-bold flex items-center justify-center gap-2 cursor-pointer hover:bg-cyan-900/30 transition">
+                                    <FileJson size={14}/> Importar JSON
+                                    <input type="file" className="hidden" accept=".json" onChange={handleImport} ref={fileRef}/>
+                                </label>
+                                <P2PSync state={state} dispatch={dispatch} />
+                            </section>
+                            <section>
+                                <h3 className="text-xs font-bold text-gray-500 uppercase mb-4">Perfil</h3>
+                                <div className="flex items-center gap-4 mb-4">
+                                    <label className="w-16 h-16 rounded-full bg-black border border-white/10 flex items-center justify-center cursor-pointer overflow-hidden group relative">
+                                        {prof.avatar ? <img src={prof.avatar} className="w-full h-full object-cover"/> : <User className="text-gray-600"/>}
+                                        <div className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center"><Edit3 size={14} className="text-white"/></div>
+                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleProfileUpload(e.target.files[0], 'avatar')}/>
+                                    </label>
+                                    <div className="flex-1 space-y-2">
+                                        <input value={prof.name} onChange={e => setProf({...prof, name: e.target.value})} className="w-full bg-transparent border-b border-white/10 text-white font-bold py-1 focus:border-cyan-500 outline-none" placeholder="Nombre"/>
+                                        <input value={prof.bio} onChange={e => setProf({...prof, bio: e.target.value})} className="w-full bg-transparent border-b border-white/10 text-gray-500 text-xs py-1 focus:border-cyan-500 outline-none" placeholder="Estado"/>
+                                    </div>
+                                </div>
+                                <FileUpload className="w-full h-20 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden relative group hover:border-cyan-500 transition-colors" onUpload={(d) => setProf(p=>({...p, banner: d}))}>
+                                    {prof.banner ? <img src={prof.banner} className="w-full h-full object-cover opacity-50"/> : <div className="text-xs text-gray-500">Subir Banner</div>}
+                                </FileUpload>
+                            </section>
+                            <section>
+                                <h3 className="text-xs font-bold text-gray-500 uppercase mb-4">APIs (Opcional)</h3>
+                                <div className="space-y-3">
+                                    <input className="w-full bg-white/5 rounded-xl px-4 py-2 text-sm text-white outline-none border border-transparent focus:border-cyan-500" placeholder="TMDB Key" type="password" value={config.tmdbKey} onChange={e=>setConfig({...config, tmdbKey:e.target.value})}/>
+                                    <input className="w-full bg-white/5 rounded-xl px-4 py-2 text-sm text-white outline-none border border-transparent focus:border-cyan-500" placeholder="RAWG Key" type="password" value={config.rawgKey} onChange={e=>setConfig({...config, rawgKey:e.target.value})}/>
+                                    <input className="w-full bg-white/5 rounded-xl px-4 py-2 text-sm text-white outline-none border border-transparent focus:border-cyan-500" placeholder="Last.fm User" value={config.lastfmUser} onChange={e=>setConfig({...config, lastfmUser:e.target.value})}/>
+                                    <input className="w-full bg-white/5 rounded-xl px-4 py-2 text-sm text-white outline-none border border-transparent focus:border-cyan-500" placeholder="Last.fm Key" type="password" value={config.lastfmKey} onChange={e=>setConfig({...config, lastfmKey:e.target.value})}/>
+                                </div>
+                            </section>
+                        </div>
+                        <div className="pt-6 mt-auto border-t border-white/10">
+                            <Button variant="accent" className="w-full py-3" onClick={() => { 
+                                dispatch({ type: 'UPDATE_SETTINGS', payload: config }); 
+                                dispatch({ type: 'UPDATE_PROFILE', payload: prof });
+                                dispatch({ type: 'SET_UI', payload: { settingsOpen: false } }); 
+                                // Reload to apply storage changes
+                                if(config.storageType !== state.settings.storageType) {
+                                    setTimeout(() => window.location.reload(), 500);
+                                }
+                            }}>Guardar</Button>
+                        </div>
+                    </div>
                 </div>
-                <div className="p-6 border-t border-white/10"><Button variant="accent" className="w-full" onClick={() => { dispatch({ type: 'UPDATE_SETTINGS', payload: keys }); dispatch({ type: 'SET_UI', payload: { settingsOpen: false } }); }}>Guardar</Button></div>
-              </div>
-            </div>
-          );
+            );
         };
 
-        const AppLayout = () => {
-          const { state, dispatch } = useContext(AppContext);
-          const { entries, ui, profile } = state;
-
-          const filteredEntries = useMemo(() => {
-            let list = entries;
-            if (ui.activeCategory === 'favorites') list = list.filter(e => e.favorite);
-            else if (ui.activeCategory !== 'all') list = list.filter(e => e.category === ui.activeCategory);
-            return list;
-          }, [entries, ui.activeCategory]);
-
-          return (
-            <div className="min-h-screen pb-20 md:pb-0 flex">
-              {/* Sidebar */}
-              <aside className="fixed left-0 top-0 bottom-0 w-64 border-r border-white/5 bg-[#0c0c0e]/80 backdrop-blur-xl hidden md:flex flex-col z-20">
-                <div className="p-8">
-                  <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500 tracking-tighter">CHRONICLE<span className="text-indigo-500">.v2</span></h1>
-                </div>
-                <nav className="flex-1 px-4 space-y-6 overflow-y-auto custom-scrollbar">
-                  <div className="space-y-1">
-                      <button onClick={() => dispatch({type: 'SET_UI', payload: {activeCategory: 'all'}})} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${ui.activeCategory === 'all' ? 'bg-white/10 text-white shadow-lg shadow-white/5' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}><LayoutGrid size={18} /> Inicio</button>
-                      <button onClick={() => dispatch({type: 'SET_UI', payload: {activeCategory: 'favorites'}})} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${ui.activeCategory === 'favorites' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}><Heart size={18} /> Favoritos</button>
-                  </div>
-                  
-                  {Object.values(GROUPS).map(group => (
-                      <div key={group.id}>
-                          <div className="px-4 text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-2">{group.label}</div>
-                          <div className="space-y-0.5">
-                              {Object.values(CATEGORIES).filter(c => c.groupId === group.id).map(cat => (
-                                <button key={cat.id} onClick={() => dispatch({type: 'SET_UI', payload: {activeCategory: cat.id}})} className={`w-full flex items-center justify-between px-4 py-2 rounded-lg transition-all text-sm ${ui.activeCategory === cat.id ? `bg-white/5 text-white` : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
-                                  <div className="flex items-center gap-3"><cat.icon size={14} className={ui.activeCategory === cat.id ? cat.color : 'opacity-50'} /> {cat.label}</div>
-                                </button>
-                              ))}
-                          </div>
-                      </div>
-                  ))}
-                </nav>
-              </aside>
-
-              {/* Main */}
-              <main className="md:ml-64 flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
-                 <header className="flex justify-between items-center mb-10 sticky top-0 z-30 py-4 bg-[#09090b]/90 backdrop-blur-xl -mx-4 px-4 md:-mx-8 md:px-8 border-b border-white/5">
-                    <h2 className="text-xl font-bold text-white capitalize hidden md:block">{ui.activeCategory === 'all' ? 'Dashboard' : ui.activeCategory === 'favorites' ? 'Favoritos' : CATEGORIES[ui.activeCategory.toUpperCase()]?.label || 'Colección'}</h2>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" onClick={() => dispatch({type: 'SET_UI', payload: {searchOpen: true}})}><Search size={18} /> <span className="hidden md:inline text-xs opacity-50">Buscar Todo</span></Button>
-                      <Button variant="accent" onClick={() => dispatch({ type: 'SET_UI', payload: { editingEntry: { id: generateId(), category: 'movie', date: new Date().toISOString().split('T')[0] }, modalOpen: true } })}><Plus size={18} /></Button>
-                      <Button variant="ghost" onClick={() => dispatch({type: 'SET_UI', payload: {settingsOpen: true}})}><Settings size={18} /></Button>
+        const Onboarding = () => {
+            const { state, dispatch } = useContext(AppContext);
+            const [localSettings, setLocalSettings] = useState({ storageType: 'localstorage', compression: 'MEDIUM' });
+            if (state.settings.setup) return null;
+            return (
+                <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 backdrop-blur-xl">
+                    <div className="w-full max-w-md bg-[#09090b] border border-white/10 rounded-3xl p-8 space-y-8 animate-scale text-center">
+                        <div className="w-16 h-16 bg-cyan-500 rounded-full mx-auto mb-4 shadow-[0_0_40px_rgba(6,182,212,0.4)] flex items-center justify-center"><div className="w-6 h-6 bg-white rounded-full"/></div>
+                        <h1 className="text-2xl font-bold text-white mb-2">Bienvenido a Chronicle</h1>
+                        <p className="text-gray-400 text-sm mb-6">Elige dónde guardar tus datos localmente.</p>
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                            <button onClick={() => setLocalSettings({...localSettings, storageType: 'localstorage'})} className={`p-4 rounded-xl border text-left transition ${localSettings.storageType === 'localstorage' ? 'bg-cyan-500/10 border-cyan-500 text-white' : 'bg-white/5 border-transparent text-gray-400'}`}><div className="font-bold mb-1 flex items-center gap-2"><Database size={16}/> LocalStorage</div><div className="text-[10px] opacity-70">Rápido, compatible.</div></button>
+                            <button onClick={() => setLocalSettings({...localSettings, storageType: 'indexeddb'})} className={`p-4 rounded-xl border text-left transition ${localSettings.storageType === 'indexeddb' ? 'bg-cyan-500/10 border-cyan-500 text-white' : 'bg-white/5 border-transparent text-gray-400'}`}><div className="font-bold mb-1 flex items-center gap-2"><HardDrive size={16}/> IndexedDB</div><div className="text-[10px] opacity-70">Más capacidad.</div></button>
+                        </div>
+                        <div>
+                             <label className="text-xs font-bold text-cyan-400 uppercase mb-3 block">Compresión de Imágenes</label>
+                             <div className="grid grid-cols-4 gap-2">
+                                 {Object.entries(COMPRESSION_LEVELS).map(([key, val]) => (
+                                     <button key={key} onClick={() => setLocalSettings({...localSettings, compression: key})} className={`py-2 rounded-lg text-xs font-bold border transition ${localSettings.compression === key ? 'bg-cyan-500 text-white border-cyan-500' : 'bg-white/5 border-transparent text-gray-400'}`}>
+                                         {val.label}
+                                     </button>
+                                 ))}
+                             </div>
+                        </div>
+                        <Button variant="accent" className="w-full py-4 text-base mt-6" onClick={() => dispatch({ type: 'COMPLETE_SETUP', payload: localSettings })}>Comenzar</Button>
                     </div>
-                 </header>
+                </div>
+            );
+        };
 
-                 {ui.activeCategory === 'all' ? (
-                     <DashboardView entries={entries} profile={profile} settings={state.settings} dispatch={dispatch} />
-                 ) : (
-                     <div className="animate-in slide-up">
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-                            {filteredEntries.map(entry => (
-                                <EntryCard key={entry.id} entry={entry} onClick={() => dispatch({ type: 'SET_UI', payload: { editingEntry: entry, modalOpen: true } })} onShare={(e) => dispatch({ type: 'SET_UI', payload: { shareEntry: e, shareOpen: true } })} />
+        const MusicWidgetMini = ({ user, apiKey }) => {
+            const [data, setData] = useState(null);
+            useEffect(() => { APIService.getLastFm(user, apiKey).then(setData); }, [user, apiKey]);
+            if (!user || !data?.recent) return null;
+            return (
+                <div className="relative overflow-hidden rounded-2xl p-0 mb-6 border border-white/5 group h-32">
+                    {/* Background Blur */}
+                    {data.recent.image && (
+                        <div 
+                            className="absolute inset-0 bg-cover bg-center opacity-30 blur-xl scale-110 transition-transform duration-1000 group-hover:scale-125"
+                            style={{backgroundImage: `url(${data.recent.image})`}}
+                        />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#09090b] via-[#09090b]/80 to-transparent" />
+
+                    <div className="relative z-10 h-full p-4 flex items-center gap-4">
+                         {/* Album Art (Square) */}
+                         <div className="relative aspect-square h-full shrink-0">
+                            {data.recent.image ? (
+                                <img src={data.recent.image} onError={(e) => {e.target.style.display='none';}} className={`w-full h-full object-cover rounded-lg shadow-2xl border border-white/10 ${data.recent.isPlaying ? 'animate-pulse-slow' : ''}`} />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-white/10 rounded-lg"><Music className="text-white opacity-50"/></div>
+                            )}
+                         </div>
+
+                         <div className="flex-1 min-w-0 flex flex-col justify-center">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-1.5">
+                                    {data.recent.isPlaying ? (
+                                        <>
+                                            <span className="relative flex h-1.5 w-1.5">
+                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500"></span>
+                                            </span>
+                                            AHORA
+                                        </>
+                                    ) : (
+                                        <><Music size={10}/> RECIENTE</>
+                                    )}
+                                </span>
+                            </div>
+                            
+                            <h3 className="text-white font-bold text-lg leading-tight truncate mb-0.5">{data.recent.name}</h3>
+                            <div className="text-gray-400 text-xs truncate font-medium flex items-center gap-1">
+                                {data.recent.artist}
+                            </div>
+                            {data.recent.album && <div className="text-gray-600 text-[10px] truncate mt-0.5">{data.recent.album}</div>}
+                         </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const AudioStats = ({ user, apiKey }) => {
+            const [data, setData] = useState(null);
+            useEffect(() => { APIService.getLastFm(user, apiKey).then(setData); }, [user, apiKey]);
+            if (!user) return <div className="p-8 text-center text-gray-500">Configura Last.fm en ajustes.</div>;
+            if (!data) return <div className="p-8 text-center text-gray-500"><RefreshCw className="animate-spin inline mr-2"/>Cargando...</div>;
+            
+            return (
+                <div className="space-y-6 mb-8 animate-fade">
+                    <MusicWidgetMini user={user} apiKey={apiKey} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="glass-panel p-6 rounded-2xl">
+                            <h3 className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-4 flex items-center gap-2"><Mic2 size={14}/> Top Artistas (7d)</h3>
+                            <div className="space-y-4">
+                                {data.topArtists.map((a,i) => (
+                                    <div key={i} className="flex items-center gap-3 group">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center font-bold text-xs text-gray-500 overflow-hidden shrink-0 relative">
+                                            {a.image ? <img src={a.image} className="w-full h-full object-cover" onError={(e)=>{e.target.style.display='none'; e.target.nextSibling.style.display='flex'}}/> : null}
+                                            <span style={{display: a.image ? 'none' : 'flex'}} className="w-full h-full items-center justify-center">{i+1}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0"><div className="text-sm font-bold text-white group-hover:text-rose-400 transition truncate">{a.name}</div><div className="text-[10px] text-gray-500">{a.playcount} scrobbles</div></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="glass-panel p-6 rounded-2xl">
+                            <h3 className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-4 flex items-center gap-2"><Disc size={14}/> Top Canciones (30d)</h3>
+                            <div className="space-y-4">
+                                {data.topTracks.map((t,i) => (
+                                    <div key={i} className="flex items-center gap-3 group">
+                                         <div className="w-8 h-8 rounded bg-white/5 overflow-hidden flex items-center justify-center shrink-0 relative">
+                                             {t.image ? <img src={t.image} className="w-full h-full object-cover" onError={(e)=>{e.target.style.display='none'; e.target.nextSibling.style.display='block'}}/> : null}
+                                             <Music size={12} className="text-gray-600 absolute" style={{display: t.image ? 'none' : 'block'}}/>
+                                         </div>
+                                         <div className="flex-1 min-w-0"><div className="text-sm font-bold text-white group-hover:text-rose-400 transition truncate">{t.name}</div><div className="text-[10px] text-gray-500 truncate">{t.artist}</div></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                         <div className="glass-panel p-6 rounded-2xl">
+                            <h3 className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-4 flex items-center gap-2"><Disc size={14}/> Top Álbumes (7d)</h3>
+                            <div className="space-y-4">
+                                {data.topAlbums.map((t,i) => (
+                                    <div key={i} className="flex items-center gap-3 group">
+                                         <div className="w-8 h-8 rounded bg-white/5 overflow-hidden flex items-center justify-center shrink-0 relative">
+                                             {t.image ? <img src={t.image} className="w-full h-full object-cover" onError={(e)=>{e.target.style.display='none'; e.target.nextSibling.style.display='block'}}/> : null}
+                                             <Music size={12} className="text-gray-600 absolute" style={{display: t.image ? 'none' : 'block'}}/>
+                                         </div>
+                                         <div className="flex-1 min-w-0"><div className="text-sm font-bold text-white group-hover:text-rose-400 transition truncate">{t.name}</div><div className="text-[10px] text-gray-500 truncate">{t.artist}</div></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* History */}
+                    {data.history && data.history.length > 0 && (
+                        <div className="glass-panel p-6 rounded-2xl">
+                             <h3 className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-4 flex items-center gap-2"><ListPlus size={14}/> Historial Reciente</h3>
+                             <div className="space-y-3">
+                                 {data.history.map((t, i) => (
+                                     <div key={i} className="flex items-center gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                                         <div className="w-8 h-8 rounded bg-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                                              {t.image ? <img src={t.image} className="w-full h-full object-cover"/> : <Music size={12} className="text-gray-500"/>}
+                                         </div>
+                                         <div className="flex-1 min-w-0">
+                                             <div className="text-xs font-bold text-white truncate">{t.name}</div>
+                                             <div className="text-[10px] text-gray-500 truncate">{t.artist}</div>
+                                         </div>
+                                         <div className="text-[9px] text-gray-600 font-mono whitespace-nowrap">{t.date}</div>
+                                     </div>
+                                 ))}
+                             </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const Dashboard = ({ entries, profile, settings, dispatch }) => {
+            const stats = useMemo(() => {
+                const totalMins = entries.reduce((acc,e)=>acc+(e.totalMinutes||0),0);
+                const ratedEntries = entries.filter(e=>e.rating>0);
+                const avg = ratedEntries.length ? (ratedEntries.reduce((a,b)=>a+b.rating,0)/ratedEntries.length) : 0;
+                const mainstreamAvg = entries.length ? Math.round(entries.reduce((a,b)=>a+(b.mainstreamScore||0),0)/entries.length) : 0;
+                const recent = [...entries].sort((a,b)=>new Date(b.date)-new Date(a.date)); 
+                const recentTop = recent.slice(0, 3);
+                const recentList = recent.slice(3, 9); 
+                const counts = { completed: 0, watching: 0, planned: 0, dropped: 0 };
+                const tags = {};
+                const dist = [0,0,0,0,0]; 
+                const favorites = entries.filter(e => e.favorite).length;
+                
+                // Stats Mes
+                const currentMonth = new Date().getMonth();
+                const currentYear = new Date().getFullYear();
+                const monthEntries = entries.filter(e => {
+                    const d = new Date(e.date);
+                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                }).length;
+
+                entries.forEach(e => { 
+                    if(counts[e.status] !== undefined) counts[e.status]++;
+                    if(e.tags) e.tags.forEach(t => tags[t] = (tags[t] || 0) + 1);
+                    if(e.rating > 0) {
+                        const idx = Math.min(4, Math.floor((e.rating - 1) / 20));
+                        dist[idx]++;
+                    }
+                });
+                
+                const topTags = Object.entries(tags).sort((a,b)=>b[1]-a[1]).slice(0,5);
+                const maxDist = Math.max(...dist, 1);
+                return { totalMins, avg, mainstreamAvg, recentTop, recentList, counts, topTags, dist, maxDist, favorites, monthEntries };
+            }, [entries]);
+
+            return (
+                <div className="animate-fade pb-24 space-y-6">
+                    {/* Header - Profile Only */}
+                    <div className="relative rounded-3xl overflow-hidden glass-panel min-h-[160px] flex flex-col justify-center group mb-6">
+                        <div className="absolute inset-0 z-0">
+                            {profile.banner ? <img src={profile.banner} className="w-full h-full object-cover opacity-40"/> : <div className="w-full h-full bg-gradient-to-r from-cyan-900 to-black opacity-50"/>}
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/40 to-transparent"/>
+                        </div>
+                        <div className="relative z-10 w-full p-8 flex items-center justify-between">
+                            <div className="flex items-center gap-6">
+                                <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white/10 shadow-2xl bg-black shrink-0">
+                                    {profile.avatar ? <img src={profile.avatar} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-gray-500 font-bold text-2xl">{profile.name ? profile.name[0] : 'C'}</div>}
+                                </div>
+                                <div>
+                                    <h1 className="text-4xl font-black text-white tracking-tight">{profile.name || 'Chronicle'}</h1>
+                                    <p className="text-gray-400 text-sm mt-1">{profile.name ? `Colección de ${profile.name}` : 'Tu colección personal'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Last.fm Widget */}
+                    <MusicWidgetMini user={settings.lastfmUser} apiKey={settings.lastfmKey} />
+
+                    {/* Recent Added - Horizontal Cards (Not in header) */}
+                    {stats.recentTop.length > 0 && (
+                        <div className="mb-2">
+                             <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2"><LayoutGrid size={14}/> Añadido Recientemente</div>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {stats.recentTop.map(e => (
+                                    <div key={e.id} className="glass-panel p-3 rounded-xl flex gap-4 cursor-pointer hover:bg-white/5 transition group" onClick={()=>dispatch({type: 'SET_UI', payload: {modalMode: 'view', focusedEntry: e}})}>
+                                        <div className="w-16 h-24 bg-black/50 rounded-lg overflow-hidden shrink-0 shadow-lg border border-white/5 relative">
+                                             {e.image ? <img src={e.image} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center"><Ghost className="opacity-20"/></div>}
+                                             <div className="absolute top-1 left-1 bg-cyan-600 text-[8px] font-bold px-1.5 rounded text-white shadow-md">NUEVO</div>
+                                        </div>
+                                        <div className="flex-1 min-w-0 py-1 flex flex-col justify-center">
+                                            <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider mb-1">{CATEGORIES[e.category?.toUpperCase()]?.label || 'Item'}</div>
+                                            <h3 className="text-sm font-bold text-white leading-tight mb-1 line-clamp-2 group-hover:text-cyan-400 transition">{e.title}</h3>
+                                            {/* Removed Year as requested */}
+                                        </div>
+                                    </div>
+                                ))}
+                             </div>
+                        </div>
+                    )}
+                    
+                    {/* New Stats Row */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Entradas este Mes</div><div className="text-xl font-bold text-white">{stats.monthEntries}</div><div className="text-[9px] text-gray-600 mt-1">Ritmo Mensual</div></div>
+                        <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Entradas</div><div className="text-xl font-bold text-white">{entries.length}</div><div className="text-[9px] text-gray-600 mt-1">Archivo Local</div></div>
+                        <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Completados</div><div className="text-xl font-bold text-emerald-400">{stats.counts.completed}</div><div className="text-[9px] text-gray-600 mt-1">Entradas Terminadas</div></div>
+                        <div className="glass-panel p-4 rounded-2xl"><div className="text-[10px] text-gray-500 font-bold uppercase mb-1">Favoritos</div><div className="text-xl font-bold text-red-400">{stats.favorites}</div><div className="text-[9px] text-gray-600 mt-1">Destacados</div></div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                         {/* Archive Status */}
+                        <div className="glass-panel p-5 rounded-2xl">
+                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2"><Archive size={14}/> Estado del Archivo</h3>
+                             <div className="space-y-3">
+                                 <div className="flex justify-between text-xs items-center"><span className="text-emerald-400 font-bold">Completado</span><span className="bg-white/5 px-2 py-0.5 rounded text-white">{stats.counts.completed}</span></div>
+                                 <div className="flex justify-between text-xs items-center"><span className="text-blue-400 font-bold">Viendo / Leyendo</span><span className="bg-white/5 px-2 py-0.5 rounded text-white">{stats.counts.watching}</span></div>
+                                 <div className="flex justify-between text-xs items-center"><span className="text-gray-400 font-bold">Planeado</span><span className="bg-white/5 px-2 py-0.5 rounded text-white">{stats.counts.planned}</span></div>
+                                 <div className="flex justify-between text-xs items-center"><span className="text-red-400 font-bold">Abandonado</span><span className="bg-white/5 px-2 py-0.5 rounded text-white">{stats.counts.dropped}</span></div>
+                                 <div className="flex justify-between text-xs items-center"><span className="text-purple-400 font-bold">Rewatch</span><span className="bg-white/5 px-2 py-0.5 rounded text-white">0</span></div>
+                             </div>
+                        </div>
+
+                         {/* Top Tags */}
+                         <div className="glass-panel p-5 rounded-2xl">
+                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2"><Hash size={14}/> Top Etiquetas</h3>
+                             <div className="space-y-3">
+                                 {stats.topTags.map(([tag, count], i) => (
+                                     <div key={tag} className="flex justify-between items-center text-sm">
+                                         <div className="flex items-center gap-3">
+                                             <span className="text-[10px] font-mono text-gray-600">0{i+1}</span>
+                                             <span className="text-gray-300 font-bold truncate max-w-[120px]">{tag}</span>
+                                         </div>
+                                         <span className="text-cyan-400 font-mono text-xs">{count}</span>
+                                     </div>
+                                 ))}
+                                 {stats.topTags.length === 0 && <div className="text-xs text-gray-600 italic">Sin etiquetas aún</div>}
+                             </div>
+                        </div>
+
+                         {/* Distribution (FIXED VISUALS) */}
+                         <div className="glass-panel p-5 rounded-2xl">
+                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2"><BarChart3 size={14}/> Distribución</h3>
+                             <div className="flex items-end justify-between h-32 gap-2 mt-4">
+                                 {stats.dist.map((val, i) => {
+                                     // Ensure height is at least 2px if value > 0 so it's visible
+                                     const heightPercent = val > 0 ? Math.max((val / stats.maxDist) * 100, 5) : 0;
+                                     return (
+                                         <div key={i} className="flex-1 flex flex-col justify-end items-center gap-2 group h-full">
+                                             <span className={`text-[9px] text-white font-bold transition-opacity mb-1 ${val>0 ? 'opacity-100' : 'opacity-0'}`}>{val}</span>
+                                             <div className="w-full bg-white/5 rounded-t-sm relative flex-1 flex items-end">
+                                                 <div className="w-full bg-cyan-600 rounded-t-sm transition-all" style={{height: `${heightPercent}%`}}></div>
+                                             </div>
+                                             <span className="text-[9px] text-gray-600 font-mono">{i+1}★</span>
+                                         </div>
+                                     );
+                                 })}
+                             </div>
+                         </div>
+                    </div>
+                    
+                    {/* Recent Activity List (Bottom - The Rest) */}
+                    <div>
+                        <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"><LayoutGrid size={14}/> Actividad Reciente</h3>
+                        <div className="space-y-2">
+                            {stats.recentList.map(e => (
+                                <div key={e.id} className="flex items-center gap-4 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-cyan-500/30 cursor-pointer transition group" onClick={()=>dispatch({type: 'SET_UI', payload: {modalMode: 'view', focusedEntry: e}})}>
+                                    <div className="w-10 h-14 rounded bg-black/50 overflow-hidden shrink-0 shadow-lg">
+                                        {e.image ? <img src={e.image} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full"><Ghost size={16} className="opacity-30"/></div>}
+                                    </div>
+                                    <div className="flex-1 min-w-0 py-1">
+                                        <div className="text-sm font-bold text-white truncate mb-1 group-hover:text-cyan-400 transition-colors">{e.title}</div>
+                                        <div className="text-[10px] text-gray-500 flex items-center gap-2">
+                                            <span className="text-gray-400 font-bold">{new Date(e.date).toLocaleDateString()}</span>
+                                            <span className="text-gray-600">•</span>
+                                            <span className="bg-white/10 px-1.5 py-0.5 rounded text-gray-300 uppercase">{CATEGORIES[e.category?.toUpperCase()]?.label || 'Item'}</span>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        {e.rating > 0 && <div className="text-sm font-black text-white mb-1">{parseFloat(e.rating).toFixed(1)}★</div>}
+                                    </div>
+                                </div>
                             ))}
-                            {filteredEntries.length === 0 && (
-                                <div className="col-span-full py-32 text-center flex flex-col items-center justify-center text-gray-600">
-                                    <Ghost size={48} className="mb-4 opacity-20" /><p>Nada por aquí...</p>
+                            {stats.recentList.length === 0 && stats.recentTop.length === 0 && <div className="py-8 text-center text-sm text-gray-600 italic">No hay actividad reciente.</div>}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const EntryDetailModal = () => {
+            const { state, dispatch } = useContext(AppContext);
+            const { ui } = state;
+            const entry = ui.focusedEntry;
+            if (ui.modalMode !== 'view' || !entry) return null;
+            const cat = CATEGORIES[entry.category?.toUpperCase()] || CATEGORIES.MOVIE;
+            const status = Object.values(STATUSES).find(s => s.id === entry.status) || STATUSES.COMPLETED;
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => dispatch({type: 'SET_UI', payload: {modalMode: null}})}>
+                    <div className="relative w-full max-w-3xl bg-[#09090b] border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-scale flex flex-col md:flex-row max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                        {/* Image Side */}
+                        <div className="w-full md:w-80 h-auto bg-black relative flex-shrink-0 flex items-center justify-center overflow-hidden self-start">
+                             {/* Background blur for fill */}
+                             {entry.image && <div className="absolute inset-0 bg-cover bg-center opacity-30 blur-xl scale-125" style={{backgroundImage: `url(${entry.image})`}} />}
+                            
+                             {/* Actual Image - Contained and centered with padding */}
+                             <div className="relative w-full h-[50vh] md:h-full p-4 flex items-center justify-center">
+                                {entry.image ? (
+                                    <img src={entry.image} className="max-w-full max-h-full object-contain relative z-10 rounded-lg shadow-2xl" />
+                                ) : (
+                                    <div className={`w-full h-64 flex items-center justify-center ${cat.color} relative z-10`}><cat.icon size={64}/></div>
+                                )}
+                             </div>
+
+                            <div className="absolute bottom-0 left-0 p-4 w-full z-20 bg-gradient-to-t from-black/90 to-transparent">
+                                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase backdrop-blur-md border border-white/10 mb-3 ${status.bg} ${status.color}`}>{status.icon && <status.icon size={12}/>} {status.label}</div>
+                                <div className="grid grid-cols-1 gap-2"><Button variant="primary" onClick={() => dispatch({type: 'SET_UI', payload: {modalMode: 'edit'}})}><Edit3 size={14}/> Editar</Button></div>
+                            </div>
+                        </div>
+                        {/* Content Side */}
+                        <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-[#09090b]">
+                            <div className="flex justify-between items-start mb-6">
+                                <div><h2 className="text-3xl font-black text-white leading-tight mb-2">{entry.title}</h2><div className="flex items-center gap-3 text-sm text-gray-400 font-medium"><span>{new Date(entry.date).getFullYear() || '----'}</span><span className="w-1 h-1 bg-gray-600 rounded-full"/><span className={cat.color}>{cat.label}</span></div></div>
+                                <div className="text-center bg-white/5 p-3 rounded-xl min-w-[70px]"><div className={`text-2xl font-black ${entry.rating>=80?'text-emerald-400':entry.rating>=60?'text-yellow-400':'text-gray-400'}`}>{entry.rating}</div><div className="text-[9px] uppercase font-bold text-gray-500">Score</div></div>
+                            </div>
+                            
+                            {/* Dates Info */}
+                            {(entry.startDate || entry.finishDate || entry.year || entry.author) && (
+                                <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-white/5 rounded-xl text-xs">
+                                     {entry.author && <div><span className="block text-gray-500 uppercase font-bold text-[10px]">Autor/Director</span><span className="text-white font-medium">{entry.author}</span></div>}
+                                     {entry.year && <div><span className="block text-gray-500 uppercase font-bold text-[10px]">Año Lanzamiento</span><span className="text-white font-medium">{entry.year}</span></div>}
+                                     {entry.startDate && <div><span className="block text-gray-500 uppercase font-bold text-[10px]">Fecha Inicio</span><span className="text-white font-medium">{formatDate(entry.startDate)}</span></div>}
+                                     {entry.finishDate && <div><span className="block text-gray-500 uppercase font-bold text-[10px]">Fecha Término</span><span className="text-white font-medium">{formatDate(entry.finishDate)}</span></div>}
                                 </div>
                             )}
+
+                            {/* Mainstream Bar */}
+                            <div className="bg-white/5 p-4 rounded-xl mb-6">
+                                <div className="flex justify-between items-end mb-2">
+                                    <div className="text-[10px] uppercase text-gray-500 font-bold">Nivel Mainstream</div>
+                                    <div className="text-xl font-bold text-purple-400">{parseFloat(entry.mainstreamScore).toFixed(1)}%</div>
+                                </div>
+                                <div className="w-full bg-black/50 h-1 rounded-full overflow-hidden"><div className="h-full bg-purple-500" style={{width: `${entry.mainstreamScore}%`}}/></div>
+                            </div>
+                            
+                            {/* Progress info if available */}
+                            {entry.total > 0 && (
+                                <div className="flex items-center justify-between mb-6 p-4 bg-white/5 rounded-xl">
+                                     <div className="text-xs font-bold text-gray-400 uppercase">Progreso</div>
+                                     <div className="text-sm font-bold text-white">{entry.progress} / {entry.total} <span className="text-gray-500">{CATEGORIES[entry.category?.toUpperCase()]?.unit}</span></div>
+                                </div>
+                            )}
+
+                            {entry.review && <div className="mb-8"><h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Reseña</h3><p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">{entry.review}</p></div>}
+                            <div className="flex flex-wrap gap-2 mb-8">{(entry.tags||[]).map(t=><span key={t} className="px-2 py-1 bg-white/5 rounded text-xs text-gray-400">#{t}</span>)}</div>
+                            <div className="mt-auto pt-6 border-t border-white/5 flex justify-end"><button className="text-red-400 text-xs hover:text-red-300 flex items-center gap-1 transition-colors" onClick={() => { if(confirm('¿Eliminar definitivamente?')) { dispatch({type:'DELETE_ENTRY', payload: entry.id}); dispatch({type:'SET_UI', payload:{modalMode:null}}); } }}><Trash2 size={12}/> Eliminar Entrada</button></div>
                         </div>
-                     </div>
-                 )}
-              </main>
-              
-              <div className="fixed bottom-0 left-0 right-0 h-16 bg-[#0c0c0e]/90 backdrop-blur-xl border-t border-white/10 flex md:hidden items-center justify-around z-40 px-2">
-                 <button onClick={() => dispatch({type: 'SET_UI', payload: {activeCategory: 'all'}})} className="p-2 text-gray-400 hover:text-white"><LayoutGrid /></button>
-                 <button onClick={() => dispatch({type: 'SET_UI', payload: {searchOpen: true}})} className="p-3 -mt-6 bg-indigo-600 rounded-full text-white shadow-lg border border-white/10"><Search /></button>
-                 <button onClick={() => dispatch({type: 'SET_UI', payload: {settingsOpen: true}})} className="p-2 text-gray-400 hover:text-white"><Settings /></button>
-              </div>
+                        <button onClick={() => dispatch({type: 'SET_UI', payload: {modalMode: null}})} className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white/50 hover:text-white backdrop-blur-sm z-20"><X size={16}/></button>
+                    </div>
+                </div>
+            );
+        };
 
-              <EntryModal />
-              <CommandPalette />
-              <SettingsDrawer />
-              <ShareModal />
+        const EntryEditModal = () => {
+            const { state, dispatch } = useContext(AppContext);
+            const { ui } = state;
+            const [form, setForm] = useState({});
+            const [tagInput, setTagInput] = useState('');
+            const [uploading, setUploading] = useState(false);
+            const [tab, setTab] = useState('general'); // 'general' | 'progress'
+
+            useEffect(() => { 
+                if(ui.focusedEntry) {
+                    // Initialize default logic for total minutes if missing
+                    setForm({ ...ui.focusedEntry, unitDuration: ui.focusedEntry.unitDuration || 0 });
+                }
+            }, [ui.focusedEntry]);
+            
+            if (ui.modalMode !== 'edit') return null;
+
+            const handleSave = () => {
+                // Calculate total minutes before saving
+                let totalMin = form.totalMinutes || 0;
+                if (form.total > 0 && form.unitDuration > 0) {
+                     totalMin = form.status === 'completed' ? (form.total * form.unitDuration) : (form.progress * form.unitDuration);
+                }
+                
+                dispatch({ type: 'SAVE_ENTRY', payload: { ...form, totalMinutes: totalMin } });
+                dispatch({ type: 'SET_UI', payload: { modalMode: 'view', focusedEntry: { ...form, totalMinutes: totalMin }, searchQuery: '', searchOpen: false } });
+            };
+
+            const handleClose = () => {
+                const entryExists = state.entries.some(e => e.id === form.id);
+                if (entryExists) {
+                    dispatch({type:'SET_UI', payload:{modalMode: 'view'}});
+                } else {
+                    dispatch({type:'SET_UI', payload:{modalMode: null, focusedEntry: null, searchOpen: false, searchQuery: ''}});
+                }
+            };
+
+            const handleImageUpload = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                setUploading(true);
+                try {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = async (ev) => {
+                        // Force vertical crop (true as 3rd arg)
+                        const compressed = await ImageUtils.compress(ev.target.result, state.settings.compression, true);
+                        setForm(f => ({ ...f, image: compressed }));
+                        setUploading(false);
+                    };
+                } catch(e) { setUploading(false); }
+            };
+
+            const addTag = (e) => { if (e.key === 'Enter' && tagInput.trim()) { setForm({ ...form, tags: [...(form.tags||[]), tagInput.trim()] }); setTagInput(''); } };
+
+            return (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl">
+                    <div className="w-full max-w-lg bg-[#09090b] border border-white/10 rounded-3xl p-6 space-y-5 animate-slide max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                            <h2 className="text-xl font-bold text-white">Editar Entrada</h2>
+                            <button onClick={handleClose}><X className="text-gray-500"/></button>
+                        </div>
+                        
+                        <div className="flex gap-2 bg-black/30 p-1 rounded-lg">
+                            <button onClick={()=>setTab('general')} className={`flex-1 py-1 text-xs font-bold rounded-md transition ${tab==='general' ? 'bg-cyan-600 text-white' : 'text-gray-500'}`}>General</button>
+                            <button onClick={()=>setTab('progress')} className={`flex-1 py-1 text-xs font-bold rounded-md transition ${tab==='progress' ? 'bg-cyan-600 text-white' : 'text-gray-500'}`}>Progreso y Tiempo</button>
+                        </div>
+
+                        {tab === 'general' && (
+                            <div className="space-y-5 animate-fade">
+                                <div className="flex gap-4">
+                                    <label className="w-24 h-36 bg-black/50 rounded-xl flex-shrink-0 overflow-hidden border border-white/10 relative group cursor-pointer flex items-center justify-center">
+                                        {form.image ? <img src={form.image} className="w-full h-full object-cover"/> : <div className="text-xs text-gray-600">Subir Img</div>}
+                                        {uploading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><RefreshCw className="animate-spin text-white"/></div>}
+                                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                                    </label>
+                                    <div className="flex-1 space-y-3">
+                                        <input className="w-full bg-transparent text-xl font-bold text-white border-b border-white/10 focus:border-cyan-500 outline-none py-1" placeholder="Título" value={form.title||''} onChange={e=>setForm({...form, title: e.target.value})}/>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <select className="bg-gray-900 border border-white/10 rounded-lg px-2 py-2 text-xs text-white outline-none bg-black text-white" value={form.category||'movie'} onChange={e=>setForm({...form, category:e.target.value})}>
+                                                {Object.values(CATEGORIES).map(c=><option key={c.id} value={c.id} className="bg-gray-900 text-white">{c.label}</option>)}
+                                            </select>
+                                            <select className="bg-gray-900 border border-white/10 rounded-lg px-2 py-2 text-xs text-white outline-none bg-black text-white" value={form.status||'completed'} onChange={e=>setForm({...form, status:e.target.value})}>
+                                                {Object.values(STATUSES).map(s=><option key={s.id} value={s.id} className="bg-gray-900 text-white">{s.label}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                             <input type="text" className="w-full bg-black/50 border border-white/10 rounded px-2 py-2 text-xs text-white outline-none" placeholder="Autor / Director" value={form.author||''} onChange={e=>setForm({...form, author: e.target.value})}/>
+                                             <input type="number" className="w-full bg-black/50 border border-white/10 rounded px-2 py-2 text-xs text-white outline-none" placeholder="Año Lanzamiento" value={form.year||''} onChange={e=>setForm({...form, year: e.target.value})}/>
+                                        </div>
+                                        <input type="date" className="w-full bg-white/5 rounded-lg px-3 py-2 text-xs text-gray-300 outline-none" value={form.date ? new Date(form.date).toISOString().split('T')[0] : ''} onChange={e=>setForm({...form, date: e.target.value})}/>
+                                    </div>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-xl space-y-4">
+                                     <div className="flex justify-between items-center"><span className="text-xs font-bold text-gray-500">FAVORITO</span>
+                                         <button onClick={()=>setForm({...form, favorite: !form.favorite})} className={`p-2 rounded-full transition ${form.favorite ? 'bg-red-500/20 text-red-500' : 'bg-white/5 text-gray-500'}`}>
+                                             <Heart size={16} fill={form.favorite ? "currentColor" : "none"}/>
+                                         </button>
+                                     </div>
+                                     <div><div className="flex justify-between text-xs font-bold text-gray-500 mb-1"><span>PUNTUACIÓN: {form.rating||0}</span></div><input type="range" className="w-full accent-cyan-500 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" min="0" max="100" value={form.rating||0} onChange={e=>setForm({...form, rating: parseInt(e.target.value)})}/></div>
+                                     <div><div className="flex justify-between text-xs font-bold text-gray-500 mb-1"><span>MAINSTREAM: {parseFloat(form.mainstreamScore||0).toFixed(1)}%</span></div><input type="range" className="w-full accent-purple-500 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer" min="0" max="100" step="0.1" value={form.mainstreamScore||0} onChange={e=>setForm({...form, mainstreamScore: parseFloat(e.target.value)})}/></div>
+                                </div>
+                                <textarea className="w-full bg-white/5 rounded-xl px-4 py-3 text-sm text-white outline-none min-h-[100px] border border-transparent focus:border-white/10" placeholder="Escribe tu reseña..." value={form.review||''} onChange={e=>setForm({...form, review: e.target.value})}/>
+                                <div className="bg-white/5 rounded-xl p-3 flex flex-wrap gap-2 items-center">
+                                    {(form.tags||[]).map(t=><span key={t} onClick={()=>setForm({...form, tags:form.tags.filter(tg=>tg!==t)})} className="bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded text-xs cursor-pointer hover:bg-red-500/20 hover:text-red-300 transition">#{t}</span>)}
+                                    <input className="bg-transparent text-sm text-white outline-none flex-1 min-w-[100px]" placeholder="+ Tag (Enter)" value={tagInput} onChange={e=>setTagInput(e.target.value)} onKeyDown={addTag} />
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'progress' && (
+                            <div className="space-y-6 animate-fade py-4">
+                                 <div className="grid grid-cols-2 gap-4">
+                                     <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                         <label className="text-[10px] uppercase font-bold text-gray-500 block mb-2">Progreso Actual</label>
+                                         <input type="number" className="w-full bg-black border border-white/20 rounded p-2 text-white text-lg font-bold outline-none" placeholder="0" value={form.progress||0} onChange={e=>setForm({...form, progress: parseInt(e.target.value)})}/>
+                                     </div>
+                                     <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                         <label className="text-[10px] uppercase font-bold text-gray-500 block mb-2">Total Unidades</label>
+                                         <input type="number" className="w-full bg-black border border-white/20 rounded p-2 text-white text-lg font-bold outline-none" placeholder="0" value={form.total||0} onChange={e=>setForm({...form, total: parseInt(e.target.value)})}/>
+                                     </div>
+                                 </div>
+                                 
+                                 <div className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                     <h3 className="text-xs font-bold text-white mb-4 flex items-center gap-2"><Timer size={14} className="text-cyan-400"/> Cálculo de Tiempo</h3>
+                                     <div className="grid grid-cols-2 gap-4 mb-4">
+                                         <div>
+                                             <label className="text-[9px] text-gray-400 block mb-1">Duración por Unidad (min)</label>
+                                             <input type="number" className="w-full bg-black border border-white/20 rounded p-2 text-white text-sm" placeholder="Ej: 24 (Anime)" value={form.unitDuration||''} onChange={e=>setForm({...form, unitDuration: parseInt(e.target.value)})}/>
+                                         </div>
+                                         <div>
+                                              <label className="text-[9px] text-gray-400 block mb-1">Cálculo Automático</label>
+                                              <div className="text-xl font-bold text-cyan-400">
+                                                  {Math.floor(((form.status==='completed'?form.total:form.progress)*form.unitDuration)/60)}h <span className="text-sm text-gray-600">{((form.status==='completed'?form.total:form.progress)*form.unitDuration)%60}m</span>
+                                              </div>
+                                         </div>
+                                     </div>
+                                     <div className="border-t border-white/10 pt-4">
+                                         <label className="text-[9px] text-gray-400 block mb-1">Sobrescribir Manualmente (Minutos Totales)</label>
+                                         <input type="number" className="w-full bg-black border border-white/20 rounded p-2 text-white text-sm" placeholder="Opcional: Tiempo total exacto" value={form.totalMinutes||''} onChange={e=>setForm({...form, totalMinutes: parseInt(e.target.value)})}/>
+                                     </div>
+                                 </div>
+                                 <div className="text-[10px] text-gray-500 text-center">
+                                     * Si ingresas la duración por unidad, el tiempo total se calculará automáticamente basado en tu progreso.
+                                 </div>
+                            </div>
+                        )}
+
+                        <Button variant="accent" className="w-full py-3" onClick={handleSave}>Guardar Entrada</Button>
+                    </div>
+                </div>
+            );
+        };
+
+        const SearchLogic = ({ query, keys, dispatch, entries }) => {
+            const [results, setResults] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [filter, setFilter] = useState('ALL');
+            
+            useEffect(() => {
+                const t = setTimeout(async () => {
+                    if(!query) return;
+                    setLoading(true);
+                    const res = await APIService.search(query, filter, keys);
+                    setResults(res);
+                    setLoading(false);
+                }, 600);
+                return () => clearTimeout(t);
+            }, [query, filter]);
+
+            const handleSelect = (item) => {
+                const existing = entries.find(e => e.title.toLowerCase() === item.title.toLowerCase() && e.category === item.type);
+                if (existing) {
+                    if (confirm(`Ya tienes "${item.title}" en tu colección.\n\n¿Es un Rewatch? (Se añadirá como nueva entrada)\nCancelar para editar la existente.`)) {
+                        // Rewatch logic
+                    } else {
+                        dispatch({type: 'SET_UI', payload: { searchOpen: false, modalMode: 'view', focusedEntry: existing }});
+                        return;
+                    }
+                }
+                dispatch({type: 'SET_UI', payload: {
+                    searchOpen: false, 
+                    modalMode: 'edit', 
+                    focusedEntry: {
+                        id: generateId(), 
+                        title: item.title, 
+                        image: item.poster, 
+                        date: new Date().toISOString().split('T')[0],
+                        mainstreamScore: item.mainstreamScore,
+                        overview: item.overview,
+                        category: item.type,
+                        tags: item.tags || [],
+                        rating: 0,
+                        // Autocomplete extra data
+                        author: item.author || '',
+                        year: item.year || ''
+                    }
+                }});
+            };
+
+            const handleManual = () => {
+                dispatch({type: 'SET_UI', payload: {
+                    searchOpen: false, 
+                    modalMode: 'edit', 
+                    focusedEntry: {
+                        id: generateId(), 
+                        title: query || '', 
+                        image: '', 
+                        date: new Date().toISOString().split('T')[0],
+                        mainstreamScore: 0,
+                        overview: '',
+                        category: 'movie',
+                        tags: [],
+                        rating: 0
+                    }
+                }});
+            };
+
+            return (
+                <div>
+                    <div className="flex items-center gap-2 mb-4">
+                        <button onClick={handleManual} className="flex-1 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 border border-white/5">
+                            <PenTool size={14}/> Crear Manualmente
+                        </button>
+                    </div>
+
+                    <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide px-2">
+                        {['ALL', 'visual', 'reading', 'audio', 'game_group'].map(f => (
+                            <button key={f} onClick={()=>setFilter(f)} className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-colors ${filter===f ? 'bg-indigo-500 text-white' : 'bg-white/5 text-gray-500'}`}>{f==='game_group'?'Juegos': f === 'audio' ? 'Música' : f}</button>
+                        ))}
+                    </div>
+                    {loading && <div className="p-8 text-center text-gray-500"><div className="animate-spin w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-2"/>Buscando...</div>}
+                    {!loading && (
+                        <>
+                            {results.map(item => (
+                                <div key={item.id + item.type} className="flex gap-4 p-3 hover:bg-white/5 rounded-xl cursor-pointer group transition-colors" onClick={() => handleSelect(item)}>
+                                    <div className="w-10 h-14 bg-white/10 rounded flex-shrink-0 overflow-hidden shadow-lg">
+                                        {item.poster && <img src={item.poster} className="w-full h-full object-cover"/>}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-white font-bold text-sm truncate group-hover:text-indigo-400 transition-colors">{item.title}</div>
+                                        <div className="text-xs text-gray-500 uppercase flex items-center gap-2">
+                                            <span className="bg-white/5 px-1.5 rounded">{item.type}</span>
+                                            {/* Removed Year as requested */}
+                                        </div>
+                                    </div>
+                                    <Plus size={18} className="text-gray-600 group-hover:text-white transition-colors"/>
+                                </div>
+                            ))}
+                        </>
+                    )}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [state, dispatch] = useReducer(reducer, initialState);
+
+            useEffect(() => {
+                const loadData = async () => {
+                    const savedSettings = JSON.parse(localStorage.getItem('chronicle_settings') || '{}');
+                    const setup = savedSettings.setup || false;
+                    const storageType = savedSettings.storageType || 'indexeddb';
+                    const data = await StorageManager.load(storageType);
+                    if (data) { dispatch({ type: 'INIT', payload: { ...data, settings: { ...data.settings, ...savedSettings, setup } } }); } 
+                    else { dispatch({ type: 'UPDATE_SETTINGS', payload: { ...savedSettings, setup } }); }
+                };
+                loadData();
+            }, []);
+
+            useEffect(() => {
+                if (state.settings.setup) {
+                    const dataToSave = { entries: state.entries, settings: state.settings, profile: state.profile };
+                    StorageManager.save(dataToSave, state.settings.storageType);
+                    localStorage.setItem('chronicle_settings', JSON.stringify({ storageType: state.settings.storageType, compression: state.settings.compression, setup: true }));
+                }
+            }, [state.entries, state.settings, state.profile]);
+
+            const filteredEntries = useMemo(() => {
+                let res = [...state.entries]; // FIX: Copia del array para evitar mutaciones al ordenar
+                if(state.ui.activeGroup === 'dashboard') return res;
+                if(state.ui.activeGroup !== 'all') {
+                    if (state.ui.activeGroup === 'audio') {
+                         res = res.filter(e => e.category === 'music');
+                    } else if (state.ui.activeGroup === 'favorites') {
+                         res = res.filter(e => e.favorite);
+                    } else {
+                        const isGroup = Object.values(GROUPS).find(g => g.id === state.ui.activeGroup);
+                        if(isGroup) {
+                            res = res.filter(e => { const cat = CATEGORIES[e.category?.toUpperCase()]; return cat && cat.groupId === isGroup.id; });
+                        }
+                    }
+                }
+                
+                // Filtro local por texto si hay búsqueda y NO es dashboard
+                if(state.ui.searchQuery && state.ui.activeGroup !== 'dashboard') {
+                    const q = state.ui.searchQuery.toLowerCase();
+                    res = res.filter(e => e.title.toLowerCase().includes(q));
+                }
+                
+                // Filtros de Categoría y Estado en las vistas de lista
+                if (state.ui.activeGroup !== 'dashboard' && state.ui.activeGroup !== 'all') {
+                    if (state.ui.filterCategory && state.ui.filterCategory !== 'all') {
+                        res = res.filter(e => e.category === state.ui.filterCategory);
+                    }
+                    if (state.ui.filterStatus && state.ui.filterStatus !== 'all') {
+                        res = res.filter(e => e.status === state.ui.filterStatus);
+                    }
+                }
+                
+                return res.sort((a,b) => new Date(b.date) - new Date(a.date));
+            }, [state.entries, state.ui.activeGroup, state.ui.searchQuery, state.ui.filterCategory, state.ui.filterStatus]);
+
+            return (
+                <AppContext.Provider value={{ state, dispatch }}>
+                    <div className="min-h-screen bg-[#050505] text-gray-200 font-sans selection:bg-cyan-500/30 pb-20 md:pb-0 md:pl-20 transition-all duration-300">
+                        {/* Mobile Header */}
+                        <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-[#050505]/80 backdrop-blur-md border-b border-white/5 p-4 flex justify-between items-center">
+                            <div className="flex items-center gap-3"><div className="w-8 h-8 bg-cyan-500 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center justify-center"></div><span className="font-bold text-white tracking-tight">Chronicle</span></div>
+                            <button onClick={() => dispatch({type: 'SET_UI', payload: {settingsOpen: true}})} className="p-2 bg-white/5 rounded-full"><Settings size={18}/></button>
+                        </div>
+
+                        {/* Sidebar */}
+                        <nav className="fixed left-0 top-0 bottom-0 w-20 bg-[#09090b] border-r border-white/5 hidden md:flex flex-col items-center py-6 z-50">
+                            <div className="mb-8 flex flex-col items-center gap-2">
+                                <div className="w-10 h-10 bg-cyan-500 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.4)] shrink-0"></div>
+                                <span className="text-[9px] font-bold text-cyan-500 uppercase tracking-widest">Chronicle</span>
+                            </div>
+                            <div className="mb-8 group cursor-pointer relative" onClick={() => dispatch({type: 'SET_UI', payload: {settingsOpen: true}})}>
+                                <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 group-hover:border-cyan-500 transition">{state.profile.avatar ? <img src={state.profile.avatar} className="w-full h-full object-cover"/> : <div className="w-full h-full bg-white/5 flex items-center justify-center text-xs font-bold text-gray-500">{state.profile.name ? state.profile.name[0] : 'C'}</div>}</div>
+                                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[8px] font-bold text-gray-500 uppercase whitespace-nowrap opacity-0 group-hover:opacity-100 transition">{state.profile.name}</div>
+                            </div>
+                            <div className="flex-1 space-y-4 w-full flex flex-col items-center overflow-y-auto custom-scrollbar px-1">
+                                <NavIcon icon={LayoutGrid} active={state.ui.activeGroup === 'dashboard'} onClick={() => dispatch({type: 'SET_UI', payload: {activeGroup: 'dashboard'}})} tooltip="Dashboard" />
+                                <NavIcon icon={Archive} active={state.ui.activeGroup === 'all'} onClick={() => dispatch({type: 'SET_UI', payload: {activeGroup: 'all'}})} tooltip="Todo" />
+                                <NavIcon icon={Heart} active={state.ui.activeGroup === 'favorites'} onClick={() => dispatch({type: 'SET_UI', payload: {activeGroup: 'favorites'}})} tooltip="Favoritos" />
+                                <div className="w-8 h-[1px] bg-white/10 my-2 shrink-0"/>
+                                {Object.values(GROUPS).map(g => (<NavIcon key={g.id} icon={g.icon} color={g.color} active={state.ui.activeGroup === g.id} onClick={() => dispatch({type: 'SET_UI', payload: {activeGroup: g.id}})} tooltip={g.label} />))}
+                            </div>
+                            <div className="mt-4 space-y-4 mb-4 shrink-0">
+                                <NavIcon icon={Search} active={state.ui.searchOpen} onClick={() => dispatch({type: 'SET_UI', payload: {searchOpen: !state.ui.searchOpen}})} tooltip="Buscar" />
+                                <NavIcon icon={Settings} onClick={() => dispatch({type: 'SET_UI', payload: {settingsOpen: true}})} tooltip="Ajustes" />
+                            </div>
+                        </nav>
+
+                        {/* Main Content */}
+                        <main className="max-w-7xl mx-auto p-4 md:p-8 pt-20 md:pt-8 min-h-screen">
+                            {state.ui.searchOpen && (
+                                <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm p-4 pt-20 md:pt-4" onClick={(e) => { if(e.target === e.currentTarget) dispatch({type: 'SET_UI', payload: {searchOpen: false}}) }}>
+                                    <div className="max-w-3xl mx-auto relative animate-slide">
+                                        <Search className="absolute left-4 top-6 -translate-y-1/2 text-gray-500"/>
+                                        <input className="w-full bg-[#09090b] border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder-gray-600 focus:border-cyan-500 outline-none transition-all shadow-xl" placeholder="Buscar..." value={state.ui.searchQuery} onChange={e => dispatch({type: 'SET_SEARCH', payload: e.target.value})} autoFocus/>
+                                        {state.ui.searchQuery && <button className="absolute right-4 top-6 -translate-y-1/2 text-gray-500 hover:text-white" onClick={() => dispatch({type: 'SET_SEARCH', payload: ''})}><X size={16}/></button>}
+                                        <div className="mt-4 bg-[#09090b] border border-white/10 rounded-2xl p-4 shadow-2xl max-h-[70vh] overflow-y-auto custom-scrollbar">
+                                            <SearchLogic query={state.ui.searchQuery} keys={state.settings} dispatch={dispatch} entries={state.entries}/>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {state.ui.activeGroup === 'dashboard' && !state.ui.searchQuery ? (
+                                <Dashboard entries={state.entries} profile={state.profile} settings={state.settings} dispatch={dispatch} />
+                            ) : state.ui.activeGroup === 'audio' && !state.ui.searchQuery ? (
+                                <div className="animate-fade">
+                                    <AudioStats user={state.settings.lastfmUser} apiKey={state.settings.lastfmKey} />
+                                    <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"><LayoutGrid size={14}/> Colección Musical</h3>
+                                    
+                                    {/* Local Search in Tab */}
+                                    <div className="mb-4 relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 w-4 h-4"/>
+                                        <input className="w-full bg-white/5 border border-white/5 rounded-xl pl-9 pr-3 py-2 text-sm text-white focus:border-cyan-500 outline-none transition-colors" placeholder="Filtrar música..." value={state.ui.searchQuery || ''} onChange={e => dispatch({type: 'SET_SEARCH', payload: e.target.value})} />
+                                        {state.ui.searchQuery && <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white" onClick={() => dispatch({type: 'SET_SEARCH', payload: ''})}><X size={14}/></button>}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                                        {filteredEntries.map(entry => (
+                                            <div key={entry.id} className="group relative aspect-[2/3] bg-white/5 rounded-xl overflow-hidden border border-white/5 cursor-pointer hover:border-cyan-500/50 transition-all hover:shadow-2xl hover:shadow-cyan-500/10 hover:-translate-y-1" onClick={() => dispatch({type: 'SET_UI', payload: {modalMode: 'view', focusedEntry: entry}})}>
+                                                {entry.image ? <img src={entry.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy"/> : <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center"><Ghost size={32} className="mb-2 opacity-20"/><span className="text-xs text-gray-500 font-bold">{entry.title}</span></div>}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                                    <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/50 backdrop-blur-md border border-white/10 ${Object.values(STATUSES).find(s=>s.id===entry.status)?.color}`}>{Object.values(STATUSES).find(s=>s.id===entry.status)?.label || 'Visto'}</div>
+                                                            {entry.rating > 0 && <div className="text-xs font-black text-yellow-400 flex items-center gap-0.5"><Star size={10} fill="currentColor"/>{entry.rating}</div>}
+                                                        </div>
+                                                        <h4 className="text-sm font-bold text-white leading-tight line-clamp-2">{entry.title}</h4>
+                                                        <div className="text-[10px] text-gray-400 mt-1 truncate">{new Date(entry.date).getFullYear()} • {CATEGORIES[entry.category?.toUpperCase()]?.label || 'General'}</div>
+                                                    </div>
+                                                    <div className="absolute top-2 right-2">
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SAVE_ENTRY', payload: { ...entry, favorite: !entry.favorite } }); }}
+                                                            className="p-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white hover:bg-white hover:text-red-500 transition-colors"
+                                                        >
+                                                            <Heart size={14} fill={entry.favorite ? "currentColor" : "none"} className={entry.favorite ? "text-red-500" : ""}/>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="animate-fade">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                                            {state.ui.activeGroup === 'all' ? <Archive/> : state.ui.activeGroup === 'favorites' ? <Heart className="text-red-500 fill-current"/> : (Object.values(GROUPS).find(g=>g.id===state.ui.activeGroup)?.icon && React.createElement(Object.values(GROUPS).find(g=>g.id===state.ui.activeGroup).icon))}
+                                            {state.ui.activeGroup === 'all' ? 'Todo' : state.ui.activeGroup === 'favorites' ? 'Favoritos' : Object.values(GROUPS).find(g=>g.id===state.ui.activeGroup)?.label}
+                                            <span className="text-sm font-normal text-gray-500 ml-2">({filteredEntries.length})</span>
+                                        </h2>
+                                    </div>
+                                    
+                                    {/* Filters & Search */}
+                                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                                        <div className="relative flex-1">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 w-4 h-4"/>
+                                            <input className="w-full bg-white/5 border border-white/5 rounded-xl pl-9 pr-3 py-3 text-sm text-white focus:border-cyan-500 outline-none transition-colors" placeholder={`Filtrar en ${state.ui.activeGroup === 'all' ? 'todo' : 'esta sección'}...`} value={state.ui.searchQuery || ''} onChange={e => dispatch({type: 'SET_SEARCH', payload: e.target.value})} />
+                                            {state.ui.searchQuery && <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white" onClick={() => dispatch({type: 'SET_SEARCH', payload: ''})}><X size={14}/></button>}
+                                        </div>
+                                        <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+                                            <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl">
+                                                <Filter size={14} className="ml-2 text-gray-500"/>
+                                                <select className="bg-transparent text-xs text-white outline-none py-2 pr-2 font-bold cursor-pointer" value={state.ui.filterCategory || 'all'} onChange={(e) => dispatch({type: 'SET_FILTER_CAT', payload: e.target.value})}>
+                                                    <option value="all" className="bg-gray-900">Todas las Categorías</option>
+                                                    {Object.values(CATEGORIES).map(c => (
+                                                        <option key={c.id} value={c.id} className="bg-gray-900">{c.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl">
+                                                <Activity size={14} className="ml-2 text-gray-500"/>
+                                                <select className="bg-transparent text-xs text-white outline-none py-2 pr-2 font-bold cursor-pointer" value={state.ui.filterStatus || 'all'} onChange={(e) => dispatch({type: 'SET_FILTER_STAT', payload: e.target.value})}>
+                                                    <option value="all" className="bg-gray-900">Todos los Estados</option>
+                                                    {Object.values(STATUSES).map(s => (
+                                                        <option key={s.id} value={s.id} className="bg-gray-900">{s.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                                        {filteredEntries.map(entry => (
+                                            <div key={entry.id} className="group relative aspect-[2/3] bg-white/5 rounded-xl overflow-hidden border border-white/5 cursor-pointer hover:border-cyan-500/50 transition-all hover:shadow-2xl hover:shadow-cyan-500/10 hover:-translate-y-1" onClick={() => dispatch({type: 'SET_UI', payload: {modalMode: 'view', focusedEntry: entry}})}>
+                                                {/* FIX: Center image better for games */}
+                                                {entry.image ? <img src={entry.image} className={`w-full h-full ${entry.category === 'game' ? 'object-contain bg-black' : 'object-cover'} transition-transform duration-700 group-hover:scale-110`} loading="lazy"/> : <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center"><Ghost size={32} className="mb-2 opacity-20"/><span className="text-xs text-gray-500 font-bold">{entry.title}</span></div>}
+                                                
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                                    <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded bg-black/50 backdrop-blur-md border border-white/10 ${Object.values(STATUSES).find(s=>s.id===entry.status)?.color}`}>{Object.values(STATUSES).find(s=>s.id===entry.status)?.label || 'Visto'}</div>
+                                                            {entry.rating > 0 && <div className="text-xs font-black text-yellow-400 flex items-center gap-0.5"><Star size={10} fill="currentColor"/>{entry.rating}</div>}
+                                                        </div>
+                                                        <h4 className="text-sm font-bold text-white leading-tight line-clamp-2">{entry.title}</h4>
+                                                        <div className="text-[10px] text-gray-400 mt-1 truncate">{CATEGORIES[entry.category?.toUpperCase()]?.label || 'General'}</div>
+                                                    </div>
+                                                    <div className="absolute top-2 right-2">
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SAVE_ENTRY', payload: { ...entry, favorite: !entry.favorite } }); }}
+                                                            className="p-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white hover:bg-white hover:text-red-500 transition-colors"
+                                                        >
+                                                            <Heart size={14} fill={entry.favorite ? "currentColor" : "none"} className={entry.favorite ? "text-red-500" : ""}/>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {filteredEntries.length === 0 && <div className="col-span-full py-20 text-center text-gray-600 flex flex-col items-center"><Ghost size={48} className="mb-4 opacity-20"/><p>No se encontraron resultados.</p></div>}
+                                    </div>
+                                </div>
+                            )}
+                        </main>
+
+                        {/* Mobile Bottom Nav */}
+                        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#09090b]/90 backdrop-blur-md border-t border-white/10 p-2 grid grid-cols-7 gap-1 z-40 pb-safe">
+                            <button onClick={() => dispatch({type: 'SET_UI', payload: {activeGroup: 'dashboard'}})} className={`flex flex-col items-center justify-center p-2 rounded-xl ${state.ui.activeGroup === 'dashboard' ? 'text-cyan-400 bg-white/5' : 'text-gray-500'}`}><LayoutGrid size={20}/></button>
+                            <button onClick={() => dispatch({type: 'SET_UI', payload: {activeGroup: 'all'}})} className={`flex flex-col items-center justify-center p-2 rounded-xl ${state.ui.activeGroup === 'all' ? 'text-cyan-400 bg-white/5' : 'text-gray-500'}`}><Archive size={20}/></button>
+                            <button onClick={() => dispatch({type: 'SET_UI', payload: {activeGroup: 'favorites'}})} className={`flex flex-col items-center justify-center p-2 rounded-xl ${state.ui.activeGroup === 'favorites' ? 'text-cyan-400 bg-white/5' : 'text-gray-500'}`}><Heart size={20}/></button>
+                            {Object.values(GROUPS).map(g => (<button key={g.id} onClick={() => dispatch({type: 'SET_UI', payload: {activeGroup: g.id}})} className={`flex flex-col items-center justify-center p-2 rounded-xl ${state.ui.activeGroup === g.id ? 'text-cyan-400 bg-white/5' : 'text-gray-500'}`}><g.icon size={20}/></button>))}
+                        </div>
+
+                        <button onClick={() => dispatch({type: 'SET_UI', payload: {searchOpen: true}})} className="fixed bottom-20 md:bottom-10 right-6 md:right-10 w-14 h-14 bg-cyan-600 hover:bg-cyan-500 text-white rounded-full shadow-lg shadow-cyan-500/30 flex items-center justify-center z-30 transition-transform active:scale-90"><Plus size={24} /></button>
+
+                        <Onboarding />
+                        <SettingsDrawer />
+                        <EntryDetailModal />
+                        <EntryEditModal />
+                        <ImportConflictModal />
+                    </div>
+                </AppContext.Provider>
+            );
+        };
+
+        const NavIcon = ({ icon: Icon, active, onClick, tooltip, color }) => (
+            <div className="relative group w-full flex justify-center cursor-pointer" onClick={onClick}>
+                <div className={`p-3 rounded-xl transition-all duration-300 ${active ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}><Icon size={20} className={active && color ? color : ''} /></div>
+                {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-cyan-500 rounded-r-full"/>}
+                {tooltip && <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 px-2 py-1 bg-gray-800 text-xs text-white rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-white/10">{tooltip}</div>}
             </div>
-          );
-        };
-
-        const ChronicleApp = () => {
-          const [state, dispatch] = useReducer(reducer, initialState);
-          useEffect(() => {
-            const saved = localStorage.getItem('chronicle_v2_data');
-            if (saved) { const parsed = JSON.parse(saved); if (!parsed.profile) parsed.profile = initialState.profile; dispatch({ type: 'LOAD_DATA', payload: parsed }); }
-          }, []);
-          useEffect(() => { localStorage.setItem('chronicle_v2_data', JSON.stringify({ entries: state.entries, settings: state.settings, profile: state.profile })); }, [state.entries, state.settings, state.profile]);
-          useEffect(() => {
-            const handleKeyDown = (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); dispatch({ type: 'SET_UI', payload: { searchOpen: !state.ui.searchOpen } }); }};
-            window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown);
-          }, [state.ui.searchOpen]);
-          return (<AppContext.Provider value={{ state, dispatch }}><AppLayout /></AppContext.Provider>);
-        };
+        );
 
         const container = document.getElementById('root');
         const root = createRoot(container);
-        root.render(<ChronicleApp />);
+        root.render(<App />);
     </script>
 </body>
 </html>
